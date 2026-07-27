@@ -7,6 +7,10 @@ def test_colab_uses_repo_specific_secret_without_tokenized_remote():
     assert "GITHUB_TOKEN_IR_SUBJECT_CLASSIFICATION" in source
     assert "userdata.get(GITHUB_TOKEN_SECRET_NAME)" in source
     assert "GIT_ASKPASS" in source
+    assert "GIT_ASKPASS_REQUIRE" in source
+    assert "git', 'ls-remote" in source
+    assert "capture_output=True" in source
+    assert "replace(github_token, '[REDACTED]')" in source
     assert "github_token = None" in source
     assert "https://x-access-token:" not in source
     assert "github_token + '@github.com'" not in source
