@@ -23,7 +23,7 @@ def test_colab_uses_repo_specific_secret_without_tokenized_remote():
     assert "drive_text_cache" in source
     assert "'full-smoke': 'configs/run_full_smoke_1k_2026.yaml'" in source
     assert "'full-final': 'configs/run_full_final_2026.yaml'" in source
-    assert "EXECUTION_STAGE = 'prepare'" in source
+    assert "EXECUTION_STAGE = 'all'" in source
     assert "materialized_fulltext_parquet" in source
     assert "materialized_dataset_parquet" in source
     assert "embeddings']['cache_dir" in source
