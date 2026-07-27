@@ -12,5 +12,8 @@ def test_colab_uses_repo_specific_secret_without_tokenized_remote():
     assert "capture_output=True" in source
     assert "replace(github_token, '[REDACTED]')" in source
     assert "github_token = None" in source
+    assert "sys.path.insert(0, source_dir)" in source
+    assert "importlib.invalidate_caches()" in source
+    assert "import ir_subject_classification" in source
     assert "https://x-access-token:" not in source
     assert "github_token + '@github.com'" not in source
