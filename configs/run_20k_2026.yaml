@@ -2,5 +2,9 @@ extends: sparse_2026.yaml
 experiment: {name: corpus_20k_2026, seed: 42, output_dir: outputs, log_level: INFO}
 labels: {top_k: 37, min_support: 5}
 sampling: {target_n: 20000, buffer: 3000, method: stratified}
+data:
+  fulltext_format: gdrive_api
+  drive_index_cache: null
+  refresh_drive_index: false
 metrics: {primary: f1_macro, bootstrap_resamples: 1000, language_min_support: 30}
 

@@ -14,3 +14,7 @@ Expected inputs:
 `data/sample/` contains a small synthetic corpus used only for tests and
 demonstration. It does not represent real SEDICI records.
 
+In Colab, very large TXT directories use `fulltext_format: gdrive_api` because
+the mounted filesystem may return an empty listing. The Drive API index is
+cached; text content is downloaded only for selected handles.
+

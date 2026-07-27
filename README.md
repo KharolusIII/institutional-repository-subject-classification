@@ -118,10 +118,17 @@ MyDrive/A___Maestria_en_ID/Tareas_PLN/100_datos_thesis_maestria/
   Datos_SEDICI/SEDICI_FullText_TXT/
 ```
 
-The repository is cloned directly into the new workspace and outputs are
-written below its ignored `outputs/` directory. Historical metadata, mapping,
-and TXT files are read from their existing locations and are never moved or
-written by the pipeline.
+The Git checkout is created on fast, temporary Colab storage at
+`/content/institutional-repository-subject-classification`. Outputs and the
+Google Drive file index cache are persisted under the exact `BASE_DIR`.
+Historical metadata, mapping, and TXT files are read from their existing
+locations and are never moved or written by the pipeline.
+
+The TXT directory contains too many entries for reliable enumeration through
+the mounted Drive filesystem. Real-data profiles therefore authenticate with
+Google Drive API, list file metadata once, cache it as
+`cache/drive_txt_index.csv`, map IDs to handles, and download only the
+full texts selected by the current execution profile.
 
 For GitHub access, create a private Colab secret named:
 

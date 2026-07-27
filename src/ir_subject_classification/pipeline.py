@@ -123,6 +123,26 @@ def prepare_fulltext_mapping(
     data = config["data"]
     if data.get("fulltext_format") == "inline" or not data.get("fulltext_source"):
         return dataset, None
+    if data.get("fulltext_format") == "gdrive_api":
+        from .drive_api import build_or_load_drive_index
+        from .mapping import map_files_to_handles
+
+        if not data.get("mapping_csv"):
+            raise ValueError("data.mapping_csv is required for Google Drive API fulltext sources")
+        index, _ = build_or_load_drive_index(
+            data["fulltext_source"],
+            data.get("drive_index_cache"),
+            bool(data.get("refresh_drive_index", False)),
+        )
+        mapping = pd.read_csv(data["mapping_csv"], dtype=str, low_memory=False)
+        mapped = map_files_to_handles(
+            index,
+            mapping,
+            data.get("mapping_id_column", "internal_id"),
+            data.get("mapping_handle_column", "handle"),
+        )
+        available = set(mapped["handle"].dropna().astype(str))
+        return dataset[dataset["handle"].astype(str).isin(available)].reset_index(drop=True), mapped
     if data.get("fulltext_format") == "parquet":
         source = Path(data["fulltext_source"])
         paths = sorted(source.glob("*.parquet")) if source.is_dir() else [source]
@@ -159,6 +179,14 @@ def attach_selected_fulltext(
 
     if isinstance(mapped, list):
         fulltext = read_fulltext_parquet(
+            mapped,
+            dataset["handle"],
+            int(config["data"].get("max_fulltext_chars", 100000)),
+        )
+    elif "drive_file_id" in mapped.columns:
+        from .drive_api import read_selected_fulltext
+
+        fulltext = read_selected_fulltext(
             mapped,
             dataset["handle"],
             int(config["data"].get("max_fulltext_chars", 100000)),

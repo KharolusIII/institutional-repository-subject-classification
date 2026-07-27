@@ -33,6 +33,8 @@ all = [
   "pyarrow>=14,<24",
   "matplotlib>=3.7,<4",
   "seaborn>=0.13,<1",
+  "google-api-python-client>=2.100,<3",
+  "google-auth>=2.20,<3",
 ]
 
 [project.scripts]
