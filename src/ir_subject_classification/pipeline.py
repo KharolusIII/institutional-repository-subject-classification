@@ -33,6 +33,7 @@ from .reporting import (
     language_distribution,
     text_statistics,
     write_environment,
+    write_evaluation_report,
     write_figures,
     write_json,
 )
@@ -376,7 +377,12 @@ def run_pipeline(config: dict[str, Any]) -> Path:
     logger.info("Split sizes: %s", dataset["split"].value_counts().to_dict())
     logger.info("Labels present in every split: %d/%d", int(coverage["present_in_all_splits"].sum()), len(coverage))
     coverage.to_csv(run_dir / "label_coverage_by_split.csv", index=False)
-    dataset.to_csv(run_dir / "dataset_splits.csv", index=False)
+    split_export = dataset
+    if not config.get("artifacts", {}).get("include_text_in_dataset_splits", True):
+        split_export = dataset.drop(
+            columns=["abstract", "keywords", "fulltext"], errors="ignore"
+        )
+    split_export.to_csv(run_dir / "dataset_splits.csv", index=False)
 
     mlb = MultiLabelBinarizer()
     y_all = mlb.fit_transform(dataset["labels"])
@@ -718,7 +724,29 @@ def run_pipeline(config: dict[str, Any]) -> Path:
         threshold,
     )
     per_label.to_csv(run_dir / "per_label_test.csv", index=False)
-    write_figures(co_matrix, per_label, run_dir / "figures")
+    per_label.sort_values(["f1", "support_test"], ascending=[False, False]).assign(
+        performance_rank=lambda frame: np.arange(1, len(frame) + 1)
+    ).to_csv(run_dir / "subject_performance_ranking.csv", index=False)
+    per_label[
+        [
+            "label",
+            "true_negative",
+            "false_positive",
+            "false_negative",
+            "true_positive",
+            "specificity",
+        ]
+    ].to_csv(run_dir / "multilabel_confusion_matrices.csv", index=False)
+    write_figures(co_matrix, per_label, run_dir / "figures", test_metrics)
+    best_configuration = best[
+        ["preprocessing", "feature_set", "representation", "classifier"]
+    ].to_dict()
+    write_evaluation_report(
+        run_dir / "evaluation_report.md",
+        best_configuration,
+        test_metrics,
+        per_label,
+    )
     language_performance(
         dataset.iloc[test_idx]["abstract_detected_language"].reset_index(drop=True),
         y_all[test_idx],
@@ -768,6 +796,7 @@ def run_pipeline(config: dict[str, Any]) -> Path:
     ).to_csv(run_dir / "scaling_estimate.csv", index=False)
     logger.info("Run completed successfully in %.3f seconds; artifacts=%s", total_seconds, run_dir)
     (run_dir / "_SUCCESS").write_text("Run completed successfully.\n", encoding="utf-8")
+    (run_dir / "RUN_INCOMPLETE").unlink(missing_ok=True)
     (run_dir / ".incomplete").unlink(missing_ok=True)
     return run_dir
 

@@ -11,6 +11,7 @@ def test_run_manifest_directory_is_never_overwritten(tmp_path):
 
 def test_incomplete_run_can_be_resumed(tmp_path):
     first_id, first = create_run_directory(tmp_path, "test", resume=True)
+    assert (first / "RUN_INCOMPLETE").exists()
     resumed_id, resumed = create_run_directory(tmp_path, "test", resume=True)
     assert resumed_id == first_id
     assert resumed == first

@@ -76,17 +76,18 @@ runs the pipeline, and displays the main artifacts. For a first check, enable
 
 ### Execution scale profiles
 
-The same scientific code can be run with four explicit profiles:
+The same scientific code can be run with five explicit profiles:
 
 | Profile | Configuration | Intended use |
 |---|---|---|
 | `smoke` | `configs/run_smoke_2026.yaml` | Up to 1,000 items; input/schema and fast Colab checks |
 | `full-smoke` | `configs/run_full_smoke_1k_2026.yaml` | Up to 1,000 items; sparse plus SBERT and LaBSE timing |
 | `20k` | `configs/run_20k_2026.yaml` | Historical-scale comparison and E0/E1 continuity |
+| `full-final` | `configs/run_full_final_2026.yaml` | Focused final evaluation on every eligible item and 37 labels |
 | `full` | `configs/run_full_corpus_2026.yaml` | Every eligible item; resumable sparse plus dense execution |
 
 Validation combinations, downloaded Drive texts, and embeddings are
-checkpointed. An interrupted run keeps a `.incomplete` marker and is resumed
+checkpointed. An interrupted run keeps a `RUN_INCOMPLETE` marker and is resumed
 on the next execution instead of starting over.
 
 The 20k profile is retained as an experimental control, not as a permanent
@@ -178,6 +179,10 @@ Dense long-document experiments use a length-weighted mean over all
 overlapping chunks inside the configured character ceiling. Full profiles use
 up to 200,000 characters and write `fulltext_coverage.csv` plus
 `embedding_coverage_*.csv` artifacts for auditing.
+
+Final runs also produce an English `evaluation_report.md`, a subject
+performance ranking, per-label multilabel confusion matrices, and
+publication-ready figures. Original subject label names are never translated.
 
 ## Historical baseline and 2026 experiments
 

@@ -22,6 +22,7 @@ def test_colab_uses_repo_specific_secret_without_tokenized_remote():
     assert "drive_txt_index.csv" in source
     assert "drive_text_cache" in source
     assert "'full-smoke': 'configs/run_full_smoke_1k_2026.yaml'" in source
+    assert "'full-final': 'configs/run_full_final_2026.yaml'" in source
     assert "config['experiment']['resume'] = RESUME_CACHES" in source
     assert "txt_probe = next(fulltext_path.glob" not in source
     assert "https://x-access-token:" not in source

@@ -5,7 +5,11 @@ from __future__ import annotations
 import numpy as np
 import pandas as pd
 from scipy.stats import pearsonr, spearmanr
-from sklearn.metrics import average_precision_score, precision_recall_fscore_support
+from sklearn.metrics import (
+    average_precision_score,
+    multilabel_confusion_matrix,
+    precision_recall_fscore_support,
+)
 
 from .metrics import multilabel_metrics
 
@@ -23,8 +27,10 @@ def per_label_evaluation(
         y_true, y_pred, average=None, zero_division=0
     )
     threshold_values = np.full(len(labels), thresholds) if np.isscalar(thresholds) else np.asarray(thresholds)
+    confusion = multilabel_confusion_matrix(y_true, y_pred)
     rows = []
     for index, label in enumerate(labels):
+        true_negative, false_positive, false_negative, true_positive = confusion[index].ravel()
         try:
             ap = average_precision_score(y_true[:, index], scores[:, index])
         except ValueError:
@@ -40,6 +46,16 @@ def per_label_evaluation(
                 "f1": f1[index],
                 "average_precision": ap,
                 "threshold": threshold_values[index],
+                "true_negative": int(true_negative),
+                "false_positive": int(false_positive),
+                "false_negative": int(false_negative),
+                "true_positive": int(true_positive),
+                "specificity": (
+                    true_negative / (true_negative + false_positive)
+                    if true_negative + false_positive
+                    else 0.0
+                ),
+                "predicted_support": int(true_positive + false_positive),
             }
         )
     return pd.DataFrame(rows)

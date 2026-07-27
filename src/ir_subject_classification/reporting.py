@@ -22,7 +22,10 @@ def create_run_directory(base: str | Path, name: str, resume: bool = False) -> t
                 for path in base_path.iterdir()
                 if path.is_dir()
                 and f"_{name}" in path.name
-                and (path / ".incomplete").exists()
+                and (
+                    (path / "RUN_INCOMPLETE").exists()
+                    or (path / ".incomplete").exists()
+                )
             ),
             reverse=True,
         )
@@ -36,7 +39,7 @@ def create_run_directory(base: str | Path, name: str, resume: bool = False) -> t
         try:
             path.mkdir(parents=True, exist_ok=False)
             (path / "figures").mkdir()
-            (path / ".incomplete").write_text("Run has not completed.\n", encoding="utf-8")
+            (path / "RUN_INCOMPLETE").write_text("Run has not completed.\n", encoding="utf-8")
             return run_id, path
         except FileExistsError:
             suffix += 1
@@ -147,7 +150,10 @@ def write_json(value: object, path: str | Path) -> None:
 
 
 def write_figures(
-    cooccurrence: pd.DataFrame, per_label: pd.DataFrame, figures_dir: str | Path
+    cooccurrence: pd.DataFrame,
+    per_label: pd.DataFrame,
+    figures_dir: str | Path,
+    overall_metrics: dict[str, float] | None = None,
 ) -> None:
     """Write optional publication-ready plots when plotting extras are installed."""
     try:
@@ -174,3 +180,153 @@ def write_figures(
     figure.tight_layout()
     figure.savefig(figures_dir / "support_vs_f1.png", dpi=180)
     plt.close(figure)
+
+    ranked = per_label.sort_values("f1", ascending=True)
+    figure, axis = plt.subplots(figsize=(10, max(8, len(ranked) * 0.32)))
+    axis.barh(ranked["label"], ranked["f1"], color="#35689a")
+    axis.set_xlim(0, 1)
+    axis.set_xlabel("F1 score")
+    axis.set_ylabel("Subject label")
+    axis.set_title("Per-label F1 score")
+    figure.tight_layout()
+    figure.savefig(figures_dir / "per_label_f1.png", dpi=180)
+    plt.close(figure)
+
+    figure, axis = plt.subplots(figsize=(10, max(8, len(ranked) * 0.32)))
+    axis.barh(ranked["label"], ranked["true_positive"], label="True positive", color="#3a923a")
+    axis.barh(
+        ranked["label"],
+        ranked["false_negative"],
+        left=ranked["true_positive"],
+        label="False negative",
+        color="#d9534f",
+    )
+    axis.barh(
+        ranked["label"],
+        ranked["false_positive"],
+        left=ranked["true_positive"] + ranked["false_negative"],
+        label="False positive",
+        color="#f0ad4e",
+    )
+    axis.set_xlabel("Test documents")
+    axis.set_ylabel("Subject label")
+    axis.set_title("Correct predictions and errors by label")
+    axis.legend(loc="lower right")
+    figure.tight_layout()
+    figure.savefig(figures_dir / "label_error_counts.png", dpi=180)
+    plt.close(figure)
+
+    figure, axis = plt.subplots(figsize=(7, 7))
+    axis.scatter(per_label["support_test"], per_label["predicted_support"], alpha=0.8)
+    maximum = max(
+        float(per_label["support_test"].max()),
+        float(per_label["predicted_support"].max()),
+        1,
+    )
+    axis.plot([0, maximum], [0, maximum], linestyle="--", color="black", linewidth=1)
+    axis.set_xlabel("True test support")
+    axis.set_ylabel("Predicted test support")
+    axis.set_title("True vs predicted label prevalence")
+    figure.tight_layout()
+    figure.savefig(figures_dir / "true_vs_predicted_support.png", dpi=180)
+    plt.close(figure)
+
+    columns = 5
+    rows = int(np.ceil(len(per_label) / columns))
+    figure, axes = plt.subplots(rows, columns, figsize=(15, rows * 3))
+    for axis, (_, row) in zip(np.asarray(axes).flat, per_label.iterrows()):
+        matrix = np.asarray(
+            [
+                [row["true_negative"], row["false_positive"]],
+                [row["false_negative"], row["true_positive"]],
+            ]
+        )
+        sns.heatmap(
+            matrix,
+            annot=True,
+            fmt=".0f",
+            cmap="Blues",
+            cbar=False,
+            xticklabels=["Predicted −", "Predicted +"],
+            yticklabels=["True −", "True +"],
+            ax=axis,
+        )
+        axis.set_title(str(row["label"]), fontsize=9)
+    for axis in np.asarray(axes).flat[len(per_label) :]:
+        axis.axis("off")
+    figure.suptitle("Per-label confusion matrices", fontsize=14)
+    figure.tight_layout(rect=(0, 0, 1, 0.98))
+    figure.savefig(figures_dir / "per_label_confusion_matrices.png", dpi=180)
+    plt.close(figure)
+
+    if overall_metrics:
+        metric_names = ["f1_macro", "f1_micro", "precision_micro", "recall_micro", "subset_accuracy"]
+        available = [name for name in metric_names if name in overall_metrics]
+        figure, axis = plt.subplots(figsize=(8, 5))
+        axis.bar(
+            [name.replace("_", " ").title() for name in available],
+            [overall_metrics[name] for name in available],
+            color="#35689a",
+        )
+        axis.set_ylim(0, 1)
+        axis.set_ylabel("Score")
+        axis.set_title("Final test metrics")
+        axis.tick_params(axis="x", rotation=25)
+        figure.tight_layout()
+        figure.savefig(figures_dir / "test_metrics_overview.png", dpi=180)
+        plt.close(figure)
+
+
+def write_evaluation_report(
+    path: str | Path,
+    best_configuration: dict[str, object],
+    test_metrics: dict[str, float],
+    per_label: pd.DataFrame,
+) -> None:
+    """Write a concise English Markdown report; label names remain unchanged."""
+    best_labels = per_label.sort_values(["f1", "support_test"], ascending=False).head(10)
+    worst_labels = per_label.sort_values(["f1", "support_test"], ascending=[True, False]).head(10)
+
+    def table(frame: pd.DataFrame) -> str:
+        lines = ["| Subject label | Test support | Precision | Recall | F1 |", "|---|---:|---:|---:|---:|"]
+        for row in frame.itertuples(index=False):
+            lines.append(
+                f"| {row.label} | {row.support_test} | {row.precision:.3f} | "
+                f"{row.recall:.3f} | {row.f1:.3f} |"
+            )
+        return "\n".join(lines)
+
+    configuration = ", ".join(
+        f"{key}={value}" for key, value in best_configuration.items()
+    )
+    content = f"""# Final evaluation report
+
+## Selected configuration
+
+{configuration}
+
+## Overall test metrics
+
+| Metric | Value |
+|---|---:|
+| Macro F1 | {test_metrics['f1_macro']:.4f} |
+| Micro F1 | {test_metrics['f1_micro']:.4f} |
+| Micro precision | {test_metrics['precision_micro']:.4f} |
+| Micro recall | {test_metrics['recall_micro']:.4f} |
+| Subset accuracy | {test_metrics['subset_accuracy']:.4f} |
+| Hamming loss | {test_metrics['hamming_loss']:.4f} |
+
+## Best classified subject labels
+
+{table(best_labels)}
+
+## Most difficult subject labels
+
+{table(worst_labels)}
+
+## Interpretation note
+
+Per-label results should be interpreted together with test support. Labels with
+very small support have high metric uncertainty.
+"""
+    Path(path).write_text(content, encoding="utf-8")
