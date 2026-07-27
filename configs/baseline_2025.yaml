@@ -1,0 +1,68 @@
+experiment:
+  name: baseline_2025
+  seed: 42
+  output_dir: outputs
+data:
+  metadata_csv: null
+  mapping_csv: null
+  fulltext_source: null
+  fulltext_format: txt
+  handle_column: handle
+  mapping_id_column: internal_id
+  mapping_handle_column: handle
+  target_columns:
+    - sedici.subject.materias
+    - sedici.subject.materias[]
+    - sedici.subject.materias[es]
+    - sedici.subject.other[es]
+  abstract_columns: auto
+  keyword_columns: auto
+  max_fulltext_chars: 100000
+labels:
+  top_k: 37
+  min_support: 5
+sampling:
+  target_n: 20000
+  buffer: 3000
+  method: stratified
+split:
+  validation_size: 0.15
+  test_size: 0.15
+  max_tries: 40
+language:
+  enabled: false
+  backend: heuristic
+preprocessing:
+  mode: raw
+  transformer_mode: minimal
+features:
+  sets: [abstract, keywords, fulltext, abstract+keywords, abstract+fulltext, keywords+fulltext, abstract+keywords+fulltext]
+  combine_mode: concat_prefixed
+representations:
+  enabled: [tfidf, bm25, sbert, labse]
+  max_features: 100000
+  min_df: 1
+  max_df: 1.0
+  ngram_range: [1, 2]
+  lowercase: true
+  bm25:
+    k1: 1.5
+    b: 0.75
+    variant: legacy
+  embeddings:
+    sbert_model: distiluse-base-multilingual-cased-v1
+    labse_model: sentence-transformers/LaBSE
+    mode: legacy_truncated
+    overlap: 32
+    batch_size: 32
+classifiers:
+  enabled: [logreg, linear_svc, sgd]
+  logreg: {solver: liblinear, max_iter: 3000}
+  linear_svc: {max_iter: 200000}
+  sgd: {loss: log_loss, max_iter: 3000, tol: 0.001}
+thresholds:
+  mode: default
+metrics:
+  primary: f1_macro
+  bootstrap_resamples: 1000
+

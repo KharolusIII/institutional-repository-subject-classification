@@ -1,0 +1,47 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "ir-subject-classification"
+version = "0.1.0"
+description = "Reproducible multi-label subject classification for institutional repositories"
+readme = "README.md"
+requires-python = ">=3.10"
+license = {text = "MIT"}
+authors = [{name = "Carlos Javier Nusch"}]
+dependencies = [
+  "numpy>=1.24,<3",
+  "pandas>=2.0,<3",
+  "scipy>=1.10,<2",
+  "scikit-learn>=1.3,<2",
+  "PyYAML>=6,<7",
+  "iterative-stratification>=0.1.7,<1",
+  "joblib>=1.3,<2",
+]
+
+[project.optional-dependencies]
+language = ["lingua-language-detector>=2.0,<3", "langid>=1.1.6,<2", "langdetect>=1.0.9,<2"]
+dense = ["sentence-transformers>=3,<6", "torch>=2,<3"]
+parquet = ["pyarrow>=14,<24"]
+plots = ["matplotlib>=3.7,<4", "seaborn>=0.13,<1"]
+dev = ["pytest>=7.4,<9", "pytest-cov>=4,<7", "nbformat>=5.9,<6"]
+all = [
+  "lingua-language-detector>=2.0,<3",
+  "sentence-transformers>=3,<6",
+  "torch>=2,<3",
+  "pyarrow>=14,<24",
+  "matplotlib>=3.7,<4",
+  "seaborn>=0.13,<1",
+]
+
+[project.scripts]
+ir-subject-classification = "ir_subject_classification.pipeline:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"
+

@@ -1,0 +1,33 @@
+extends: sparse_2026.yaml
+experiment: {name: dummy_smoke, seed: 42, output_dir: outputs}
+data:
+  metadata_csv: data/sample/dummy_metadata.csv
+  mapping_csv: null
+  fulltext_source: null
+  fulltext_format: inline
+  handle_column: handle
+  target_columns: ["sedici.subject.materias[es]"]
+  abstract_columns: ["dc.description.abstract[es]", "dc.description.abstract[en]"]
+  keyword_columns: ["dc.subject[es]", "dc.subject[en]"]
+  max_fulltext_chars: 100000
+labels: {top_k: 4, min_support: 2}
+sampling: {target_n: null, buffer: 0, method: stratified}
+split: {validation_size: 0.15, test_size: 0.15, max_tries: 40}
+language: {enabled: true, backend: heuristic, keyword_min_chars: 20}
+preprocessing: {modes: [raw, normalized, language_stopwords], transformer_mode: minimal}
+features: {sets: [abstract, keywords, fulltext, abstract+keywords+fulltext], combine_mode: concat_prefixed}
+representations:
+  enabled: [bow, tfidf, bm25]
+  max_features: 2000
+  min_df: 1
+  max_df: 1.0
+  ngram_range: [1, 2]
+  lowercase: true
+  bm25: {k1: 1.5, b: 0.75, variant: legacy}
+classifiers:
+  enabled: [logreg, linear_svc, sgd]
+  logreg: {solver: liblinear, max_iter: 500}
+  linear_svc: {max_iter: 20000}
+  sgd: {loss: log_loss, max_iter: 1000, tol: 0.001}
+thresholds: {mode: global_threshold, minimum_label_support: 3}
+metrics: {primary: f1_macro, bootstrap_resamples: 50, language_min_support: 5}

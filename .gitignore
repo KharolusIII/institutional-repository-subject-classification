@@ -1,0 +1,44 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.coverage
+htmlcov/
+.venv/
+venv/
+
+# Editors and OS
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
+
+# Private or large data
+data/raw/
+data/private/
+data/fulltext/
+*.csv.gz
+*.jsonl
+*.parquet
+!data/sample/*.csv
+!data/sample/*.parquet
+
+# Generated artifacts and caches
+outputs/*
+!outputs/.gitkeep
+.cache/
+cache/
+embeddings/
+models/
+wandb/
+mlruns/
+
+# Secrets
+.env
+.env.*
+*.pem
+*.key
+credentials*.json
+token*.json
+

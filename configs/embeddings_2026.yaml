@@ -1,0 +1,13 @@
+extends: baseline_2025.yaml
+experiment: {name: embeddings_2026, seed: 42, output_dir: outputs}
+language: {enabled: true, backend: heuristic, keyword_min_chars: 20}
+representations:
+  enabled: [sbert, labse]
+  embeddings:
+    sbert_model: distiluse-base-multilingual-cased-v1
+    labse_model: sentence-transformers/LaBSE
+    modes: [legacy_truncated, chunked_mean, chunked_length_weighted_mean]
+    overlap: 32
+    batch_size: 32
+    cache: true
+

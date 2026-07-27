@@ -1,0 +1,20 @@
+extends: sparse_2026.yaml
+experiment: {name: full_2026, seed: 42, output_dir: outputs}
+representations:
+  enabled: [bow, tfidf, bm25, sbert, labse]
+  max_features: 100000
+  min_df: 2
+  max_df: 0.98
+  ngram_range: [1, 2]
+  lowercase: true
+  bm25: {k1: 1.5, b: 0.75, variant: legacy}
+  embeddings:
+    sbert_model: distiluse-base-multilingual-cased-v1
+    labse_model: sentence-transformers/LaBSE
+    modes: [legacy_truncated, chunked_mean, chunked_length_weighted_mean]
+    overlap: 32
+    batch_size: 32
+    cache: true
+thresholds: {mode: global_threshold, minimum_label_support: 20}
+metrics: {primary: f1_macro, bootstrap_resamples: 1000, language_min_support: 30}
+

@@ -1,0 +1,12 @@
+extends: baseline_2025.yaml
+experiment: {name: sparse_2026, seed: 42, output_dir: outputs}
+language: {enabled: true, backend: lingua, keyword_min_chars: 20}
+preprocessing: {modes: [raw, normalized, language_stopwords], transformer_mode: minimal}
+representations:
+  enabled: [bow, tfidf, bm25]
+  max_features: 100000
+  min_df: 1
+  max_df: 1.0
+  ngram_range: [1, 2]
+  lowercase: true
+  bm25: {k1: 1.5, b: 0.75, variant: legacy}
