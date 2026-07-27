@@ -166,7 +166,8 @@ Abstract and full text are detected independently. Keyword detection is
 best-effort and becomes `und` when evidence is insufficient.
 
 Language-specific stopword removal is available only for BoW, TF-IDF, and
-BM25, and is applied per field before concatenation. Lists come from
+BM25, and is applied independently to abstracts and full text before
+concatenation. Keywords are normalized but never stopword-filtered. Lists come from
 [Stopwords ISO](https://github.com/stopwords-iso/stopwords-iso) through the
 pinned `stopwordsiso` package and use ISO 639-1 language codes. Unsupported or
 undetermined languages remain unchanged. Transformers retain natural text and

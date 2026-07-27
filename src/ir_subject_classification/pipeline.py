@@ -229,8 +229,13 @@ def build_feature_text(frame: pd.DataFrame, feature_set: str, preprocessing: str
     parts = []
     for field in fields:
         language_column = f"{field}_detected_language"
+        field_preprocessing = (
+            "normalized"
+            if field == "keywords" and preprocessing == "language_stopwords"
+            else preprocessing
+        )
         values = [
-            preprocess_sparse(text, language, preprocessing)
+            preprocess_sparse(text, language, field_preprocessing)
             for text, language in zip(frame[field], frame[language_column])
         ]
         parts.append([f"{field.upper()}: {value}" for value in values])
@@ -304,6 +309,7 @@ def run_pipeline(config: dict[str, Any]) -> Path:
         len(dataset),
     )
     if "fulltext_source_characters" in dataset:
+        truncated = dataset["fulltext_truncated"].astype("boolean").fillna(False)
         pd.DataFrame(
             [
                 {
@@ -322,11 +328,9 @@ def run_pipeline(config: dict[str, Any]) -> Path:
                         * dataset["fulltext"].str.len().sum()
                         / max(dataset["fulltext_source_characters"].fillna(0).sum(), 1)
                     ),
-                    "truncated_documents": int(
-                        dataset["fulltext_truncated"].fillna(False).sum()
-                    ),
+                    "truncated_documents": int(truncated.sum()),
                     "truncated_document_percentage": float(
-                        100 * dataset["fulltext_truncated"].fillna(False).mean()
+                        100 * truncated.mean()
                     ),
                 }
             ]
