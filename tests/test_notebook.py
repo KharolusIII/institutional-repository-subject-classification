@@ -13,6 +13,7 @@ def test_colab_uses_repo_specific_secret_without_tokenized_remote():
     assert "replace(github_token, '[REDACTED]')" in source
     assert "github_token = None" in source
     assert "sys.path.insert(0, source_dir)" in source
+    assert "del sys.modules[module_name]" in source
     assert "importlib.invalidate_caches()" in source
     assert "import ir_subject_classification" in source
     assert "auth.authenticate_user()" in source
