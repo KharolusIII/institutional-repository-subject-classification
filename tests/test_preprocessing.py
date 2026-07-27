@@ -3,7 +3,8 @@ from ir_subject_classification.preprocessing import preprocess_sparse, preproces
 
 def test_language_aware_stopwords():
     assert preprocess_sparse("el modelo y la prueba", "es", "language_stopwords") == "modelo prueba"
-    assert preprocess_sparse("the model and the test", "en", "language_stopwords") == "model test"
+    assert preprocess_sparse("the model and the test", "en", "language_stopwords") == "model"
+    assert preprocess_sparse("o modelo e a prova", "pt", "language_stopwords") == "modelo prova"
 
 
 def test_und_does_not_remove_stopwords():

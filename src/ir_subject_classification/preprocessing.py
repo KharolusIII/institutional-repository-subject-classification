@@ -4,13 +4,23 @@ from __future__ import annotations
 
 import re
 import unicodedata
+from functools import lru_cache
 
-STOPWORDS = {
-    "es": {"el", "la", "los", "las", "de", "del", "y", "en", "para", "por", "un", "una"},
-    "en": {"the", "a", "an", "and", "of", "in", "for", "to", "with", "on"},
-    "pt": {"o", "a", "os", "as", "de", "da", "do", "e", "em", "para", "com"},
-    "fr": {"le", "la", "les", "de", "des", "et", "en", "pour", "un", "une"},
-}
+
+@lru_cache(maxsize=None)
+def language_stopwords(language: str) -> frozenset[str]:
+    """Return Stopwords ISO terms for an ISO 639-1 language code."""
+    if not language or language == "und":
+        return frozenset()
+    try:
+        import stopwordsiso
+    except ImportError as exc:
+        raise ImportError(
+            "Install stopwordsiso to use preprocessing mode=language_stopwords"
+        ) from exc
+    if language not in stopwordsiso.langs():
+        return frozenset()
+    return frozenset(word.casefold() for word in stopwordsiso.stopwords(language))
 
 
 def normalize_text(text: object) -> str:
@@ -20,10 +30,11 @@ def normalize_text(text: object) -> str:
 
 
 def remove_language_stopwords(text: str, language: str) -> str:
-    if language == "und" or language not in STOPWORDS:
+    stopwords = language_stopwords(language)
+    if not stopwords:
         return text
-    stopwords = STOPWORDS[language]
-    return " ".join(token for token in text.split() if token.lower() not in stopwords)
+    tokens = re.findall(r"(?u)\b\w+\b", text)
+    return " ".join(token for token in tokens if token.casefold() not in stopwords)
 
 
 def preprocess_sparse(text: object, language: str, mode: str) -> str:

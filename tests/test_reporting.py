@@ -9,6 +9,13 @@ def test_run_manifest_directory_is_never_overwritten(tmp_path):
     assert first_id != second_id
 
 
+def test_incomplete_run_can_be_resumed(tmp_path):
+    first_id, first = create_run_directory(tmp_path, "test", resume=True)
+    resumed_id, resumed = create_run_directory(tmp_path, "test", resume=True)
+    assert resumed_id == first_id
+    assert resumed == first
+
+
 def test_run_log_persists_messages_and_warnings(tmp_path):
     logger = configure_run_logging(tmp_path)
     logger.info("test message")

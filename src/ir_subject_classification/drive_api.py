@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import io
 import logging
+import os
 import time
 from collections import defaultdict
 from pathlib import Path
@@ -133,15 +134,29 @@ def download_text(service, drive_file_id: str, retries: int = 3) -> str:
 
 
 def read_selected_fulltext(
-    mapped: pd.DataFrame, handles: list[str] | pd.Series, max_chars: int = 100_000
+    mapped: pd.DataFrame,
+    handles: list[str] | pd.Series,
+    max_chars: int = 100_000,
+    cache_dir: str | Path | None = None,
 ) -> pd.DataFrame:
     wanted = set(map(str, handles))
     selected = mapped[mapped["handle"].astype(str).isin(wanted)]
     service = create_drive_service()
+    cache = Path(cache_dir) if cache_dir else None
+    if cache:
+        cache.mkdir(parents=True, exist_ok=True)
     texts: dict[str, list[str]] = defaultdict(list)
     for row in selected.itertuples(index=False):
+        cached_path = cache / f"{row.drive_file_id}.txt" if cache else None
         try:
-            text = download_text(service, str(row.drive_file_id))
+            if cached_path and cached_path.is_file():
+                text = cached_path.read_text(encoding="utf-8", errors="replace")
+            else:
+                text = download_text(service, str(row.drive_file_id))
+                if cached_path:
+                    temporary = cached_path.with_suffix(".tmp")
+                    temporary.write_text(text, encoding="utf-8")
+                    os.replace(temporary, cached_path)
         except Exception as exc:
             LOGGER.warning(
                 "Could not download Drive file %s (%s): %s",
@@ -152,9 +167,23 @@ def read_selected_fulltext(
             continue
         if text.strip():
             texts[str(row.handle)].append(text)
+    rows = []
+    for handle, parts in texts.items():
+        complete_text = "\n\n".join(parts)
+        rows.append(
+            {
+                "handle": handle,
+                "fulltext": complete_text[:max_chars],
+                "fulltext_source_characters": len(complete_text),
+                "fulltext_truncated": len(complete_text) > max_chars,
+            }
+        )
     return pd.DataFrame(
-        {
-            "handle": list(texts),
-            "fulltext": ["\n\n".join(parts)[:max_chars] for parts in texts.values()],
-        }
+        rows,
+        columns=[
+            "handle",
+            "fulltext",
+            "fulltext_source_characters",
+            "fulltext_truncated",
+        ],
     )

@@ -1,5 +1,6 @@
 extends: sparse_2026.yaml
 experiment: {name: full_2026, seed: 42, output_dir: outputs}
+data: {max_fulltext_chars: 200000}
 representations:
   enabled: [bow, tfidf, bm25, sbert, labse]
   max_features: 100000
@@ -11,9 +12,10 @@ representations:
   embeddings:
     sbert_model: distiluse-base-multilingual-cased-v1
     labse_model: sentence-transformers/LaBSE
-    modes: [legacy_truncated, chunked_mean, chunked_length_weighted_mean]
+    modes: [chunked_length_weighted_mean]
     overlap: 32
     batch_size: 32
+    document_batch_size: 32
     cache: true
 thresholds: {mode: global_threshold, minimum_label_support: 20}
 metrics: {primary: f1_macro, bootstrap_resamples: 1000, language_min_support: 30}

@@ -18,3 +18,7 @@ In Colab, very large TXT directories use `fulltext_format: gdrive_api` because
 the mounted filesystem may return an empty listing. The Drive API index is
 cached; text content is downloaded only for selected handles.
 
+Downloaded files are cached individually under the persistent
+`cache/fulltext` directory. After a Colab timeout, rerunning a resumable
+profile downloads only files that are still missing.
+

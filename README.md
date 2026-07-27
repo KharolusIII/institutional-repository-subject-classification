@@ -76,13 +76,18 @@ runs the pipeline, and displays the main artifacts. For a first check, enable
 
 ### Execution scale profiles
 
-The same scientific code can be run at three explicit scales:
+The same scientific code can be run with four explicit profiles:
 
 | Profile | Configuration | Intended use |
 |---|---|---|
 | `smoke` | `configs/run_smoke_2026.yaml` | Up to 1,000 items; input/schema and fast Colab checks |
+| `full-smoke` | `configs/run_full_smoke_1k_2026.yaml` | Up to 1,000 items; sparse plus SBERT and LaBSE timing |
 | `20k` | `configs/run_20k_2026.yaml` | Historical-scale comparison and E0/E1 continuity |
-| `full` | `configs/run_full_corpus_2026.yaml` | Every eligible item in the corpus |
+| `full` | `configs/run_full_corpus_2026.yaml` | Every eligible item; resumable sparse plus dense execution |
+
+Validation combinations, downloaded Drive texts, and embeddings are
+checkpointed. An interrupted run keeps a `.incomplete` marker and is resumed
+on the next execution instead of starting over.
 
 The 20k profile is retained as an experimental control, not as a permanent
 limit. Results across scales must be reported separately because their
@@ -161,9 +166,17 @@ Abstract and full text are detected independently. Keyword detection is
 best-effort and becomes `und` when evidence is insufficient.
 
 Language-specific stopword removal is available only for BoW, TF-IDF, and
-BM25, and is applied per field before concatenation. Transformers retain
-natural text and receive only Unicode/whitespace/obvious-noise cleanup.
+BM25, and is applied per field before concatenation. Lists come from
+[Stopwords ISO](https://github.com/stopwords-iso/stopwords-iso) through the
+pinned `stopwordsiso` package and use ISO 639-1 language codes. Unsupported or
+undetermined languages remain unchanged. Transformers retain natural text and
+receive only Unicode/whitespace/obvious-noise cleanup.
 Declared-versus-detected comparisons are called **agreement**, never accuracy.
+
+Dense long-document experiments use a length-weighted mean over all
+overlapping chunks inside the configured character ceiling. Full profiles use
+up to 200,000 characters and write `fulltext_coverage.csv` plus
+`embedding_coverage_*.csv` artifacts for auditing.
 
 ## Historical baseline and 2026 experiments
 

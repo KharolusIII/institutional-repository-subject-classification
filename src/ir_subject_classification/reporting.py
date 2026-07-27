@@ -13,7 +13,21 @@ import numpy as np
 import pandas as pd
 
 
-def create_run_directory(base: str | Path, name: str) -> tuple[str, Path]:
+def create_run_directory(base: str | Path, name: str, resume: bool = False) -> tuple[str, Path]:
+    base_path = Path(base)
+    if resume and base_path.is_dir():
+        candidates = sorted(
+            (
+                path
+                for path in base_path.iterdir()
+                if path.is_dir()
+                and f"_{name}" in path.name
+                and (path / ".incomplete").exists()
+            ),
+            reverse=True,
+        )
+        if candidates:
+            return candidates[0].name, candidates[0]
     stamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
     suffix = 0
     while True:
@@ -22,6 +36,7 @@ def create_run_directory(base: str | Path, name: str) -> tuple[str, Path]:
         try:
             path.mkdir(parents=True, exist_ok=False)
             (path / "figures").mkdir()
+            (path / ".incomplete").write_text("Run has not completed.\n", encoding="utf-8")
             return run_id, path
         except FileExistsError:
             suffix += 1

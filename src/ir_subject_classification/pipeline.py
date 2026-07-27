@@ -6,6 +6,7 @@ import argparse
 import ast
 import json
 import logging
+import os
 import time
 from pathlib import Path
 from typing import Any
@@ -190,6 +191,7 @@ def attach_selected_fulltext(
             mapped,
             dataset["handle"],
             int(config["data"].get("max_fulltext_chars", 100000)),
+            config["data"].get("drive_text_cache"),
         )
     else:
         fulltext = read_fulltext_txt(
@@ -247,10 +249,27 @@ def _default_threshold(score_kind: str) -> float:
     return 0.5 if score_kind == "probabilities" else 0.0
 
 
+def _experiment_key(
+    preprocessing: str, feature_set: str, representation: str, classifier: str
+) -> tuple[str, str, str, str]:
+    return preprocessing, feature_set, representation, classifier
+
+
+def _write_checkpoint(rows: list[dict[str, object]], path: Path) -> None:
+    temporary = path.with_suffix(".tmp")
+    pd.DataFrame(rows).to_csv(temporary, index=False)
+    os.replace(temporary, path)
+
+
 def run_pipeline(config: dict[str, Any]) -> Path:
-    run_id, run_dir = create_run_directory(config["experiment"].get("output_dir", "outputs"), config["experiment"]["name"])
+    run_id, run_dir = create_run_directory(
+        config["experiment"].get("output_dir", "outputs"),
+        config["experiment"]["name"],
+        bool(config["experiment"].get("resume", False)),
+    )
+    resumed = (run_dir / "config_resolved.yaml").exists()
     logger = configure_run_logging(run_dir, config["experiment"].get("log_level", "INFO"))
-    logger.info("Starting run_id=%s", run_id)
+    logger.info("%s run_id=%s", "Resuming" if resumed else "Starting", run_id)
     logger.info("Configuration source=%s", config.get("_config_path", "in-memory"))
     logger.info(
         "Execution scale target_n=%s top_k=%s",
@@ -284,6 +303,34 @@ def run_pipeline(config: dict[str, Any]) -> Path:
         before_fulltext,
         len(dataset),
     )
+    if "fulltext_source_characters" in dataset:
+        pd.DataFrame(
+            [
+                {
+                    "documents": len(dataset),
+                    "max_fulltext_characters": int(
+                        config["data"].get("max_fulltext_chars", 100000)
+                    ),
+                    "source_characters_total": int(
+                        dataset["fulltext_source_characters"].fillna(0).sum()
+                    ),
+                    "represented_characters_total": int(
+                        dataset["fulltext"].str.len().sum()
+                    ),
+                    "represented_character_percentage": float(
+                        100
+                        * dataset["fulltext"].str.len().sum()
+                        / max(dataset["fulltext_source_characters"].fillna(0).sum(), 1)
+                    ),
+                    "truncated_documents": int(
+                        dataset["fulltext_truncated"].fillna(False).sum()
+                    ),
+                    "truncated_document_percentage": float(
+                        100 * dataset["fulltext_truncated"].fillna(False).mean()
+                    ),
+                }
+            ]
+        ).to_csv(run_dir / "fulltext_coverage.csv", index=False)
 
     stage = time.perf_counter()
     dataset = add_language_columns(dataset, config)
@@ -336,8 +383,21 @@ def run_pipeline(config: dict[str, Any]) -> Path:
     modes = config.get("preprocessing", {}).get("modes")
     if modes is None:
         modes = [config.get("preprocessing", {}).get("mode", "raw")]
-    validation_rows: list[dict[str, object]] = []
-    fitted: dict[tuple[str, str, str, str], tuple[object, object, str]] = {}
+    validation_checkpoint = run_dir / "results_validation_checkpoint.csv"
+    if validation_checkpoint.exists():
+        validation_rows = pd.read_csv(validation_checkpoint).to_dict("records")
+        logger.info("Loaded %d completed validation combinations", len(validation_rows))
+    else:
+        validation_rows: list[dict[str, object]] = []
+    completed = {
+        _experiment_key(
+            str(row["preprocessing"]),
+            str(row["feature_set"]),
+            str(row["representation"]),
+            str(row["classifier"]),
+        )
+        for row in validation_rows
+    }
 
     for mode in modes:
         logger.info("Starting sparse preprocessing mode=%s", mode)
@@ -346,6 +406,19 @@ def run_pipeline(config: dict[str, Any]) -> Path:
             texts = build_feature_text(dataset, feature_set, mode)
             timings.append({"stage": "preprocessing", "feature_set": feature_set, "preprocessing": mode, "seconds": time.perf_counter() - stage})
             for representation in sparse_representations:
+                pending_classifiers = [
+                    name
+                    for name in config["classifiers"]["enabled"]
+                    if _experiment_key(mode, feature_set, representation, name) not in completed
+                ]
+                if not pending_classifiers:
+                    logger.info(
+                        "Checkpoint hit representation=%s feature_set=%s preprocessing=%s",
+                        representation,
+                        feature_set,
+                        mode,
+                    )
+                    continue
                 logger.info(
                     "Fitting representation=%s feature_set=%s preprocessing=%s",
                     representation,
@@ -370,7 +443,7 @@ def run_pipeline(config: dict[str, Any]) -> Path:
                 stage = time.perf_counter()
                 x_validation = vectorizer.transform([texts[i] for i in validation_idx])
                 timings.append({"stage": "representation_transform", "feature_set": feature_set, "representation": representation, "seconds": time.perf_counter() - stage})
-                for classifier_name in config["classifiers"]["enabled"]:
+                for classifier_name in pending_classifiers:
                     classifier = create_classifier(
                         classifier_name,
                         config["classifiers"].get(classifier_name, {}),
@@ -385,8 +458,6 @@ def run_pipeline(config: dict[str, Any]) -> Path:
                     prediction = apply_thresholds(scores, threshold)
                     prediction_time = time.perf_counter() - stage
                     metrics = multilabel_metrics(y_all[validation_idx], prediction, scores)
-                    key = (mode, feature_set, representation, classifier_name)
-                    fitted[key] = (vectorizer, classifier, score_kind)
                     validation_rows.append(
                         {
                             "run_id": run_id,
@@ -398,6 +469,8 @@ def run_pipeline(config: dict[str, Any]) -> Path:
                             **metrics,
                         }
                     )
+                    completed.add(_experiment_key(mode, feature_set, representation, classifier_name))
+                    _write_checkpoint(validation_rows, validation_checkpoint)
                     logger.info(
                         "Validation result repr=%s feature=%s preprocessing=%s classifier=%s f1_macro=%.6f f1_micro=%.6f",
                         representation,
@@ -430,11 +503,27 @@ def run_pipeline(config: dict[str, Any]) -> Path:
             )
             for embedding_mode in dense_modes:
                 representation_name = f"{representation}:{embedding_mode}"
+                pending_classifiers = [
+                    name
+                    for name in config["classifiers"]["enabled"]
+                    if _experiment_key(
+                        "transformer_minimal", feature_set, representation_name, name
+                    )
+                    not in completed
+                ]
+                if not pending_classifiers:
+                    logger.info(
+                        "Checkpoint hit representation=%s feature_set=%s",
+                        representation_name,
+                        feature_set,
+                    )
+                    continue
                 embedder = DocumentEmbedder(
                     model_name=model_name,
                     mode=embedding_mode,
                     overlap=int(embedding_config.get("overlap", 32)),
                     batch_size=int(embedding_config.get("batch_size", 32)),
+                    document_batch_size=int(embedding_config.get("document_batch_size", 32)),
                     cache_dir=run_dir / "embedding_cache" if embedding_config.get("cache", True) else None,
                 )
                 logger.info(
@@ -447,6 +536,15 @@ def run_pipeline(config: dict[str, Any]) -> Path:
                 stage = time.perf_counter()
                 x_train = embedder.encode([texts[i] for i in train_idx])
                 x_validation = embedder.encode([texts[i] for i in validation_idx])
+                embedding_statistics = {
+                    "feature_set": feature_set,
+                    "representation": representation_name,
+                    **embedder.last_statistics,
+                }
+                pd.DataFrame([embedding_statistics]).to_csv(
+                    run_dir / f"embedding_coverage_{representation}_{embedding_mode}_{feature_set.replace('+', '_')}.csv",
+                    index=False,
+                )
                 timings.append(
                     {
                         "stage": "representation_transform",
@@ -455,7 +553,7 @@ def run_pipeline(config: dict[str, Any]) -> Path:
                         "seconds": time.perf_counter() - stage,
                     }
                 )
-                for classifier_name in config["classifiers"]["enabled"]:
+                for classifier_name in pending_classifiers:
                     classifier = create_classifier(
                         classifier_name,
                         config["classifiers"].get(classifier_name, {}),
@@ -469,8 +567,6 @@ def run_pipeline(config: dict[str, Any]) -> Path:
                     prediction = apply_thresholds(scores, _default_threshold(score_kind))
                     prediction_time = time.perf_counter() - stage
                     metrics = multilabel_metrics(y_all[validation_idx], prediction, scores)
-                    key = ("transformer_minimal", feature_set, representation_name, classifier_name)
-                    fitted[key] = (embedder, classifier, score_kind)
                     validation_rows.append(
                         {
                             "run_id": run_id,
@@ -482,6 +578,12 @@ def run_pipeline(config: dict[str, Any]) -> Path:
                             **metrics,
                         }
                     )
+                    completed.add(
+                        _experiment_key(
+                            "transformer_minimal", feature_set, representation_name, classifier_name
+                        )
+                    )
+                    _write_checkpoint(validation_rows, validation_checkpoint)
                     logger.info(
                         "Validation result repr=%s feature=%s classifier=%s f1_macro=%.6f f1_micro=%.6f",
                         representation_name,
@@ -522,14 +624,55 @@ def run_pipeline(config: dict[str, Any]) -> Path:
         best.classifier,
         best.f1_macro,
     )
-    key = (best.preprocessing, best.feature_set, best.representation, best.classifier)
-    vectorizer, classifier, score_kind = fitted[key]
     if best.preprocessing == "transformer_minimal":
         final_texts = build_transformer_text(dataset, best.feature_set)
+        representation, embedding_mode = str(best.representation).split(":", 1)
+        model_name = embedding_config.get(
+            f"{representation}_model",
+            "distiluse-base-multilingual-cased-v1"
+            if representation == "sbert"
+            else "sentence-transformers/LaBSE",
+        )
+        vectorizer = DocumentEmbedder(
+            model_name=model_name,
+            mode=embedding_mode,
+            overlap=int(embedding_config.get("overlap", 32)),
+            batch_size=int(embedding_config.get("batch_size", 32)),
+            document_batch_size=int(embedding_config.get("document_batch_size", 32)),
+            cache_dir=run_dir / "embedding_cache" if embedding_config.get("cache", True) else None,
+        )
+        x_train = vectorizer.encode([final_texts[i] for i in train_idx])
+        classifier = create_classifier(
+            str(best.classifier),
+            config["classifiers"].get(str(best.classifier), {}),
+            int(config["experiment"].get("seed", 42)),
+        )
+        classifier.fit(x_train, y_all[train_idx])
+        score_kind = str(best.score_kind)
         x_test = vectorizer.encode([final_texts[i] for i in test_idx])
         validation_text = vectorizer.encode([final_texts[i] for i in validation_idx])
     else:
         final_texts = build_feature_text(dataset, best.feature_set, best.preprocessing)
+        params = config["representations"]
+        bm25 = params.get("bm25", {})
+        vectorizer = create_sparse_vectorizer(
+            str(best.representation),
+            max_features=params.get("max_features"),
+            min_df=params.get("min_df", 1),
+            max_df=params.get("max_df", 1.0),
+            ngram_range=params.get("ngram_range", [1, 2]),
+            lowercase=params.get("lowercase", True),
+            k1=bm25.get("k1", 1.5),
+            b=bm25.get("b", 0.75),
+        )
+        x_train = vectorizer.fit_transform([final_texts[i] for i in train_idx])
+        classifier = create_classifier(
+            str(best.classifier),
+            config["classifiers"].get(str(best.classifier), {}),
+            int(config["experiment"].get("seed", 42)),
+        )
+        classifier.fit(x_train, y_all[train_idx])
+        score_kind = str(best.score_kind)
         x_test = vectorizer.transform([final_texts[i] for i in test_idx])
         validation_text = vectorizer.transform([final_texts[i] for i in validation_idx])
     validation_scores, _ = prediction_scores(classifier, validation_text)
@@ -601,9 +744,27 @@ def run_pipeline(config: dict[str, Any]) -> Path:
         predictions.to_parquet(run_dir / "predictions_test.parquet", index=False)
     except ImportError:
         predictions.to_csv(run_dir / "predictions_test.csv", index=False)
-    timings.append({"stage": "total", "seconds": time.perf_counter() - started})
+    total_seconds = time.perf_counter() - started
+    timings.append({"stage": "total", "seconds": total_seconds})
     pd.DataFrame(timings).to_csv(run_dir / "timing.csv", index=False)
-    logger.info("Run completed successfully in %.3f seconds; artifacts=%s", time.perf_counter() - started, run_dir)
+    documents_per_hour = len(dataset) * 3600 / max(total_seconds, 1)
+    pd.DataFrame(
+        [
+            {
+                "observed_documents": len(dataset),
+                "observed_seconds": total_seconds,
+                "documents_per_hour_linear": documents_per_hour,
+                "projected_documents_24h_linear": int(documents_per_hour * 24),
+                "recommended_documents_20h_linear": int(documents_per_hour * 20),
+                "warning": (
+                    "Linear projection from one hardware/runtime profile; validate at a larger scale."
+                ),
+            }
+        ]
+    ).to_csv(run_dir / "scaling_estimate.csv", index=False)
+    logger.info("Run completed successfully in %.3f seconds; artifacts=%s", total_seconds, run_dir)
+    (run_dir / "_SUCCESS").write_text("Run completed successfully.\n", encoding="utf-8")
+    (run_dir / ".incomplete").unlink(missing_ok=True)
     return run_dir
 
 

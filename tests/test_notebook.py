@@ -20,6 +20,9 @@ def test_colab_uses_repo_specific_secret_without_tokenized_remote():
     assert "PROJECT_DIR = Path('/content/institutional-repository-subject-classification')" in source
     assert "DRIVE_WORKSPACE = Path(BASE_DIR)" in source
     assert "drive_txt_index.csv" in source
+    assert "drive_text_cache" in source
+    assert "'full-smoke': 'configs/run_full_smoke_1k_2026.yaml'" in source
+    assert "config['experiment']['resume'] = RESUME_CACHES" in source
     assert "txt_probe = next(fulltext_path.glob" not in source
     assert "https://x-access-token:" not in source
     assert "github_token + '@github.com'" not in source

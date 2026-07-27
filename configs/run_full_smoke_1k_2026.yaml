@@ -1,5 +1,10 @@
-extends: sparse_2026.yaml
-experiment: {name: smoke_1k_2026, seed: 42, output_dir: outputs, log_level: INFO, resume: true}
+extends: full_2026.yaml
+experiment:
+  name: full_smoke_1k_2026
+  seed: 42
+  output_dir: outputs
+  log_level: INFO
+  resume: true
 labels: {top_k: 37, min_support: 2}
 sampling: {target_n: 1000, buffer: 100, method: stratified}
 data:
@@ -8,4 +13,3 @@ data:
   drive_text_cache: null
   refresh_drive_index: false
 metrics: {primary: f1_macro, bootstrap_resamples: 100, language_min_support: 10}
-
