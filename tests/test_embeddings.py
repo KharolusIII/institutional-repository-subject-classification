@@ -12,7 +12,7 @@ def test_chunking_and_pooling_without_model_download():
     assert np.allclose(pool_embeddings(vectors, [1, 3], "chunked_length_weighted_mean"), [2.5, 1.5])
 
 
-def test_document_embeddings_resume_from_per_document_cache(tmp_path):
+def test_document_embeddings_resume_from_batch_cache(tmp_path):
     class Tokenizer:
         def encode(self, text, add_special_tokens=False):
             return list(range(len(text.split())))
@@ -45,7 +45,7 @@ def test_document_embeddings_resume_from_per_document_cache(tmp_path):
 
     class FailingModel(Model):
         def encode(self, texts, **kwargs):
-            raise AssertionError("Per-document cache was not reused")
+            raise AssertionError("Document-batch cache was not reused")
 
     embedder.model = FailingModel()
     second = embedder.encode(texts)

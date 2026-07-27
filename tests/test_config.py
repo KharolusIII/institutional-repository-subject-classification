@@ -15,8 +15,29 @@ def test_execution_scale_profiles():
     ]
     assert full_final["sampling"]["target_n"] is None
     assert full_final["labels"]["top_k"] == 37
-    assert full_final["representations"]["enabled"] == ["bm25"]
-    assert full_final["classifiers"]["enabled"] == ["sgd"]
+    assert full_final["representations"]["enabled"] == [
+        "bow",
+        "tfidf",
+        "bm25",
+        "sbert",
+        "labse",
+    ]
+    assert full_final["classifiers"]["enabled"] == ["logreg", "linear_svc", "sgd"]
+    assert full_final["experiment"]["stage"] == "all"
+    sparse = {"bow", "tfidf", "bm25"}
+    dense = {"sbert", "labse"}
+    representations = set(full_final["representations"]["enabled"])
+    combinations = (
+        len(full_final["preprocessing"]["modes"])
+        * len(full_final["features"]["sets"])
+        * len(representations & sparse)
+        * len(full_final["classifiers"]["enabled"])
+        + len(full_final["features"]["sets"])
+        * len(representations & dense)
+        * len(full_final["representations"]["embeddings"]["modes"])
+        * len(full_final["classifiers"]["enabled"])
+    )
+    assert combinations == 231
     assert full_final["artifacts"]["include_text_in_dataset_splits"] is False
     assert medium["sampling"]["target_n"] == 20000
     assert full["sampling"]["target_n"] is None

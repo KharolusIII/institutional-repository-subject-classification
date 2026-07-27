@@ -179,7 +179,24 @@ def attach_selected_fulltext(
         return dataset
     from .ingestion import read_fulltext_parquet, read_fulltext_txt
 
-    if isinstance(mapped, list):
+    materialized_path_value = config["data"].get("materialized_fulltext_parquet")
+    materialized_path = Path(materialized_path_value) if materialized_path_value else None
+    requested_handles = set(dataset["handle"].astype(str))
+    materialized = None
+    if materialized_path and materialized_path.exists():
+        materialized = pd.read_parquet(materialized_path)
+        materialized["handle"] = materialized["handle"].astype(str)
+        available = set(materialized["handle"])
+        if requested_handles.issubset(available):
+            fulltext = materialized[
+                materialized["handle"].isin(requested_handles)
+            ].reset_index(drop=True)
+        else:
+            materialized = None
+
+    if materialized is not None:
+        pass
+    elif isinstance(mapped, list):
         fulltext = read_fulltext_parquet(
             mapped,
             dataset["handle"],
@@ -200,12 +217,29 @@ def attach_selected_fulltext(
             dataset["handle"],
             int(config["data"].get("max_fulltext_chars", 100000)),
         )
+    if materialized_path and materialized is None:
+        materialized_path.parent.mkdir(parents=True, exist_ok=True)
+        temporary = materialized_path.with_suffix(".tmp.parquet")
+        fulltext.to_parquet(temporary, index=False, compression="zstd")
+        os.replace(temporary, materialized_path)
     result = dataset.drop(columns=["fulltext"], errors="ignore").merge(fulltext, on="handle", how="left")
     result["fulltext"] = result["fulltext"].fillna("").astype(str)
     return result[result["fulltext"].str.strip().ne("")].reset_index(drop=True)
 
 
 def add_language_columns(frame: pd.DataFrame, config: dict[str, Any]) -> pd.DataFrame:
+    prepared_value = config.get("data", {}).get("materialized_dataset_parquet")
+    prepared_path = Path(prepared_value) if prepared_value else None
+    if prepared_path and prepared_path.exists():
+        prepared = pd.read_parquet(prepared_path)
+        prepared["handle"] = prepared["handle"].astype(str)
+        requested = frame["handle"].astype(str).tolist()
+        if set(requested).issubset(set(prepared["handle"])):
+            return (
+                prepared.set_index("handle", drop=False)
+                .loc[requested]
+                .reset_index(drop=True)
+            )
     result = frame.copy()
     language_config = config.get("language", {})
     detector = create_language_detector(language_config.get("backend", "heuristic"))
@@ -309,6 +343,13 @@ def run_pipeline(config: dict[str, Any]) -> Path:
         before_fulltext,
         len(dataset),
     )
+    execution_stage = str(config["experiment"].get("stage", "all")).lower()
+    allowed_stages = {"prepare", "sparse", "sbert", "labse", "finalize", "all"}
+    if execution_stage not in allowed_stages:
+        raise ValueError(
+            f"Unknown execution stage {execution_stage!r}; expected one of {sorted(allowed_stages)}"
+        )
+    logger.info("Execution stage=%s", execution_stage)
     if "fulltext_source_characters" in dataset:
         truncated = dataset["fulltext_truncated"].astype("boolean").fillna(False)
         pd.DataFrame(
@@ -383,13 +424,43 @@ def run_pipeline(config: dict[str, Any]) -> Path:
             columns=["abstract", "keywords", "fulltext"], errors="ignore"
         )
     split_export.to_csv(run_dir / "dataset_splits.csv", index=False)
+    try:
+        prepared_value = config.get("data", {}).get("materialized_dataset_parquet")
+        prepared_path = (
+            Path(prepared_value)
+            if prepared_value
+            else run_dir / "dataset_prepared.parquet"
+        )
+        prepared_path.parent.mkdir(parents=True, exist_ok=True)
+        temporary = prepared_path.with_suffix(".tmp.parquet")
+        dataset.to_parquet(temporary, index=False, compression="zstd")
+        os.replace(temporary, prepared_path)
+        if prepared_path != run_dir / "dataset_prepared.parquet":
+            pd.DataFrame(
+                [{"materialized_dataset_parquet": str(prepared_path)}]
+            ).to_csv(run_dir / "dataset_materialization.csv", index=False)
+    except ImportError:
+        logger.warning("PyArrow is unavailable; dataset_prepared.parquet was not written")
+
+    if execution_stage == "prepare":
+        timings.append({"stage": "prepare_total", "seconds": time.perf_counter() - started})
+        pd.DataFrame(timings).to_csv(run_dir / "timing_prepare.csv", index=False)
+        logger.info(
+            "Preparation stage completed; rerun with stage=sparse, sbert, labse, or all"
+        )
+        return run_dir
 
     mlb = MultiLabelBinarizer()
     y_all = mlb.fit_transform(dataset["labels"])
     train_idx = np.flatnonzero(dataset["split"].eq("train"))
     validation_idx = np.flatnonzero(dataset["split"].eq("validation"))
     test_idx = np.flatnonzero(dataset["split"].eq("test"))
-    sparse_representations = [item for item in config["representations"]["enabled"] if item in {"bow", "tfidf", "bm25"}]
+    sparse_representations = [
+        item
+        for item in config["representations"]["enabled"]
+        if item in {"bow", "tfidf", "bm25"}
+        and execution_stage in {"sparse", "all"}
+    ]
     modes = config.get("preprocessing", {}).get("modes")
     if modes is None:
         modes = [config.get("preprocessing", {}).get("mode", "raw")]
@@ -498,7 +569,10 @@ def run_pipeline(config: dict[str, Any]) -> Path:
                     )
 
     dense_representations = [
-        item for item in config["representations"]["enabled"] if item in {"sbert", "labse"}
+        item
+        for item in config["representations"]["enabled"]
+        if item in {"sbert", "labse"}
+        and execution_stage in {item, "all"}
     ]
     embedding_config = config["representations"].get("embeddings", {})
     dense_modes = embedding_config.get("modes") or [embedding_config.get("mode", "legacy_truncated")]
@@ -528,13 +602,19 @@ def run_pipeline(config: dict[str, Any]) -> Path:
                         feature_set,
                     )
                     continue
+                configured_embedding_cache = embedding_config.get("cache_dir")
+                embedding_cache = (
+                    Path(configured_embedding_cache)
+                    if configured_embedding_cache
+                    else run_dir / "embedding_cache"
+                )
                 embedder = DocumentEmbedder(
                     model_name=model_name,
                     mode=embedding_mode,
                     overlap=int(embedding_config.get("overlap", 32)),
                     batch_size=int(embedding_config.get("batch_size", 32)),
                     document_batch_size=int(embedding_config.get("document_batch_size", 32)),
-                    cache_dir=run_dir / "embedding_cache" if embedding_config.get("cache", True) else None,
+                    cache_dir=embedding_cache if embedding_config.get("cache", True) else None,
                 )
                 logger.info(
                     "Encoding dense representation=%s mode=%s feature_set=%s model=%s",
@@ -623,7 +703,54 @@ def run_pipeline(config: dict[str, Any]) -> Path:
     validation = pd.DataFrame(validation_rows).sort_values("f1_macro", ascending=False)
     validation.to_csv(run_dir / "results_validation.csv", index=False)
     if validation.empty:
-        raise ValueError("No sparse experiment was enabled. Dense execution is available through DocumentEmbedder but is not auto-run.")
+        raise ValueError("No completed validation experiment is available.")
+    if execution_stage not in {"finalize", "all"}:
+        timings.append(
+            {
+                "stage": f"{execution_stage}_total",
+                "seconds": time.perf_counter() - started,
+            }
+        )
+        pd.DataFrame(timings).to_csv(
+            run_dir / f"timing_{execution_stage}.csv", index=False
+        )
+        logger.info(
+            "Stage %s completed with %d total validation combinations; "
+            "RUN_INCOMPLETE is retained for the next stage",
+            execution_stage,
+            len(validation),
+        )
+        return run_dir
+    expected = {
+        _experiment_key(mode, feature_set, representation, classifier)
+        for mode in modes
+        for feature_set in config["features"]["sets"]
+        for representation in config["representations"]["enabled"]
+        if representation in {"bow", "tfidf", "bm25"}
+        for classifier in config["classifiers"]["enabled"]
+    }
+    expected.update(
+        {
+            _experiment_key(
+                "transformer_minimal",
+                feature_set,
+                f"{representation}:{embedding_mode}",
+                classifier,
+            )
+            for feature_set in config["features"]["sets"]
+            for representation in config["representations"]["enabled"]
+            if representation in {"sbert", "labse"}
+            for embedding_mode in dense_modes
+            for classifier in config["classifiers"]["enabled"]
+        }
+    )
+    missing = expected - completed
+    if missing:
+        raise RuntimeError(
+            f"Cannot finalize: {len(missing)} of {len(expected)} validation "
+            "combinations are still missing. Complete the sparse, sbert, and "
+            "labse stages first."
+        )
 
     best = validation.iloc[0]
     logger.info(
@@ -643,13 +770,19 @@ def run_pipeline(config: dict[str, Any]) -> Path:
             if representation == "sbert"
             else "sentence-transformers/LaBSE",
         )
+        configured_embedding_cache = embedding_config.get("cache_dir")
+        embedding_cache = (
+            Path(configured_embedding_cache)
+            if configured_embedding_cache
+            else run_dir / "embedding_cache"
+        )
         vectorizer = DocumentEmbedder(
             model_name=model_name,
             mode=embedding_mode,
             overlap=int(embedding_config.get("overlap", 32)),
             batch_size=int(embedding_config.get("batch_size", 32)),
             document_batch_size=int(embedding_config.get("document_batch_size", 32)),
-            cache_dir=run_dir / "embedding_cache" if embedding_config.get("cache", True) else None,
+            cache_dir=embedding_cache if embedding_config.get("cache", True) else None,
         )
         x_train = vectorizer.encode([final_texts[i] for i in train_idx])
         classifier = create_classifier(

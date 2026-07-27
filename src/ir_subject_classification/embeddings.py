@@ -83,6 +83,17 @@ class DocumentEmbedder:
         directory.mkdir(parents=True, exist_ok=True)
         return directory / f"{hasher.hexdigest()}.npy"
 
+    def _batch_cache_path(self, texts: list[str]) -> Path | None:
+        if self.cache_dir is None:
+            return None
+        hasher = hashlib.sha256()
+        for value in (self.model_name, self.mode, str(self.overlap), *texts):
+            hasher.update(value.encode("utf-8"))
+            hasher.update(b"\0")
+        directory = self.cache_dir / "batches"
+        directory.mkdir(parents=True, exist_ok=True)
+        return directory / f"{hasher.hexdigest()}.npy"
+
     @staticmethod
     def _save_array_atomic(path: Path, value: np.ndarray) -> None:
         temporary = path.with_suffix(".tmp.npy")
@@ -99,51 +110,35 @@ class DocumentEmbedder:
                 "cache_hit": 1,
             }
             return result
-        cached_vectors: list[np.ndarray | None] = []
-        missing_indices: list[int] = []
-        for index, text in enumerate(texts):
-            document_cache = self._document_cache_path(text)
-            if document_cache and document_cache.exists():
-                cached_vectors.append(np.load(document_cache))
-            else:
-                cached_vectors.append(None)
-                missing_indices.append(index)
-        if self.mode == "legacy_truncated":
-            for batch_start in range(0, len(missing_indices), self.document_batch_size):
-                indices = missing_indices[batch_start : batch_start + self.document_batch_size]
-                vectors = self.model.encode(
-                    [texts[index] for index in indices],
+        batches: list[np.ndarray] = []
+        cached_documents = 0
+        total_tokens = 0
+        total_chunks = 0
+        tokenizer = self.model.tokenizer if self.mode != "legacy_truncated" else None
+        max_length = int(self.model.max_seq_length) if tokenizer is not None else 0
+        content_max_length = (
+            max(1, max_length - int(tokenizer.num_special_tokens_to_add(pair=False)))
+            if tokenizer is not None
+            else 0
+        )
+        for batch_start in range(0, len(texts), self.document_batch_size):
+            batch_texts = texts[batch_start : batch_start + self.document_batch_size]
+            batch_cache = self._batch_cache_path(batch_texts)
+            if batch_cache and batch_cache.exists():
+                batches.append(np.load(batch_cache))
+                cached_documents += len(batch_texts)
+                continue
+            if self.mode == "legacy_truncated":
+                batch_vectors = self.model.encode(
+                    batch_texts,
                     batch_size=self.batch_size,
                     convert_to_numpy=True,
                     show_progress_bar=True,
                 )
-                for index, vector in zip(indices, vectors):
-                    cached_vectors[index] = vector
-                    document_cache = self._document_cache_path(texts[index])
-                    if document_cache:
-                        self._save_array_atomic(document_cache, vector)
-            result = np.asarray(cached_vectors)
-            self.last_statistics = {
-                "mode": self.mode,
-                "documents": len(texts),
-                "documents_loaded_from_cache": len(texts) - len(missing_indices),
-                "cache_hit": 0,
-            }
-        else:
-            tokenizer = self.model.tokenizer
-            max_length = int(self.model.max_seq_length)
-            content_max_length = max(
-                1, max_length - int(tokenizer.num_special_tokens_to_add(pair=False))
-            )
-            pooled = cached_vectors
-            total_tokens = 0
-            total_chunks = 0
-            for batch_start in range(0, len(missing_indices), self.document_batch_size):
-                indices = missing_indices[batch_start : batch_start + self.document_batch_size]
+            else:
                 document_chunks: list[list[list[int]]] = []
                 chunk_texts: list[str] = []
-                for index in indices:
-                    text = texts[index]
+                for text in batch_texts:
                     ids = tokenizer.encode(text, add_special_tokens=False)
                     total_tokens += len(ids)
                     chunks = chunk_token_ids(
@@ -151,24 +146,42 @@ class DocumentEmbedder:
                     )
                     total_chunks += len(chunks)
                     document_chunks.append(chunks)
-                    chunk_texts.extend(tokenizer.decode(chunk, skip_special_tokens=True) for chunk in chunks)
-                vectors = self.model.encode(
-                    chunk_texts, batch_size=self.batch_size, convert_to_numpy=True, show_progress_bar=False
-                )
-                offset = 0
-                for index, chunks in zip(indices, document_chunks):
-                    count = len(chunks)
-                    vector = pool_embeddings(
-                        vectors[offset : offset + count],
-                        [len(chunk) for chunk in chunks],
-                        self.mode,
+                    chunk_texts.extend(
+                        tokenizer.decode(chunk, skip_special_tokens=True)
+                        for chunk in chunks
                     )
-                    pooled[index] = vector
-                    document_cache = self._document_cache_path(texts[index])
-                    if document_cache:
-                        self._save_array_atomic(document_cache, vector)
+                chunk_vectors = self.model.encode(
+                    chunk_texts,
+                    batch_size=self.batch_size,
+                    convert_to_numpy=True,
+                    show_progress_bar=False,
+                )
+                pooled = []
+                offset = 0
+                for chunks in document_chunks:
+                    count = len(chunks)
+                    pooled.append(
+                        pool_embeddings(
+                            chunk_vectors[offset : offset + count],
+                            [len(chunk) for chunk in chunks],
+                            self.mode,
+                        )
+                    )
                     offset += count
-            result = np.asarray(pooled)
+                batch_vectors = np.asarray(pooled)
+            if batch_cache:
+                self._save_array_atomic(batch_cache, np.asarray(batch_vectors))
+            batches.append(np.asarray(batch_vectors))
+        result = np.concatenate(batches, axis=0) if batches else np.empty((0, 0))
+        if self.mode == "legacy_truncated":
+            self.last_statistics = {
+                "mode": self.mode,
+                "documents": len(texts),
+                "documents_loaded_from_cache": cached_documents,
+                "cache_hit": 0,
+                "cache_layout": "document_batches",
+            }
+        else:
             self.last_statistics = {
                 "mode": self.mode,
                 "documents": len(texts),
@@ -177,8 +190,9 @@ class DocumentEmbedder:
                 "model_max_tokens": max_length,
                 "max_content_tokens_per_chunk": content_max_length,
                 "overlap_tokens": self.overlap,
-                "documents_loaded_from_cache": len(texts) - len(missing_indices),
+                "documents_loaded_from_cache": cached_documents,
                 "cache_hit": 0,
+                "cache_layout": "document_batches",
             }
         if cache_path:
             self._save_array_atomic(cache_path, result)

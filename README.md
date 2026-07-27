@@ -83,12 +83,31 @@ The same scientific code can be run with five explicit profiles:
 | `smoke` | `configs/run_smoke_2026.yaml` | Up to 1,000 items; input/schema and fast Colab checks |
 | `full-smoke` | `configs/run_full_smoke_1k_2026.yaml` | Up to 1,000 items; sparse plus SBERT and LaBSE timing |
 | `20k` | `configs/run_20k_2026.yaml` | Historical-scale comparison and E0/E1 continuity |
-| `full-final` | `configs/run_full_final_2026.yaml` | Focused final evaluation on every eligible item and 37 labels |
+| `full-final` | `configs/run_full_final_2026.yaml` | All 231 sparse and dense combinations on every eligible item and 37 labels |
 | `full` | `configs/run_full_corpus_2026.yaml` | Every eligible item; resumable sparse plus dense execution |
 
 Validation combinations, downloaded Drive texts, and embeddings are
 checkpointed. An interrupted run keeps a `RUN_INCOMPLETE` marker and is resumed
 on the next execution instead of starting over.
+
+The `full-final` profile can be executed as five resumable Colab stages by
+setting `EXECUTION_STAGE` in the notebook:
+
+1. `prepare` downloads and consolidates the selected full text, detects
+   languages, fixes the split, and writes compressed Parquet datasets;
+2. `sparse` evaluates BoW, TF-IDF, and BM25;
+3. `sbert` creates/reuses chunked SBERT vectors and evaluates all classifiers;
+4. `labse` does the same for LaBSE;
+5. `finalize` selects the validation winner and performs the isolated test
+   evaluation.
+
+`all` executes the same phases in one invocation. For separate Colab sessions,
+use the five named stages in order. The validation CSV is updated atomically
+after every completed model combination. Full text and prepared records are
+stored as Zstandard-compressed Parquet, while dense vectors use atomic,
+batch-sharded NumPy caches keyed by model, pooling configuration, and document
+contents. A disconnection can therefore lose at most the currently encoded
+document batch rather than an entire representation.
 
 The 20k profile is retained as an experimental control, not as a permanent
 limit. Results across scales must be reported separately because their

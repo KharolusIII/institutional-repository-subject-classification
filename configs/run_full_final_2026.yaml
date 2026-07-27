@@ -1,10 +1,11 @@
-extends: sparse_2026.yaml
+extends: full_2026.yaml
 experiment:
   name: full_final_37_labels_2026
   seed: 42
   output_dir: outputs
   log_level: INFO
   resume: true
+  stage: all
 labels: {top_k: 37, min_support: 5}
 sampling: {target_n: null, buffer: 0, method: stratified}
 data:
@@ -12,23 +13,43 @@ data:
   max_fulltext_chars: 200000
   drive_index_cache: null
   drive_text_cache: null
+  materialized_fulltext_parquet: null
+  materialized_dataset_parquet: null
   refresh_drive_index: false
 preprocessing:
   modes: [raw, normalized, language_stopwords]
   transformer_mode: minimal
 features:
-  sets: [fulltext, abstract+fulltext, keywords+fulltext, abstract+keywords+fulltext]
+  sets:
+    - abstract
+    - keywords
+    - fulltext
+    - abstract+keywords
+    - abstract+fulltext
+    - keywords+fulltext
+    - abstract+keywords+fulltext
   combine_mode: concat_prefixed
 representations:
-  enabled: [bm25]
+  enabled: [bow, tfidf, bm25, sbert, labse]
   max_features: 100000
   min_df: 2
   max_df: 0.98
   ngram_range: [1, 2]
   lowercase: true
   bm25: {k1: 1.5, b: 0.75, variant: legacy}
+  embeddings:
+    sbert_model: distiluse-base-multilingual-cased-v1
+    labse_model: sentence-transformers/LaBSE
+    modes: [chunked_length_weighted_mean]
+    overlap: 32
+    batch_size: 32
+    document_batch_size: 32
+    cache: true
+    cache_dir: null
 classifiers:
-  enabled: [sgd]
+  enabled: [logreg, linear_svc, sgd]
+  logreg: {solver: liblinear, max_iter: 3000}
+  linear_svc: {max_iter: 200000}
   sgd: {loss: log_loss, max_iter: 3000, tol: 0.001}
 thresholds: {mode: global_threshold, minimum_label_support: 20}
 metrics: {primary: f1_macro, bootstrap_resamples: 1000, language_min_support: 30}
