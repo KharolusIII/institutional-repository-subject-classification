@@ -76,13 +76,14 @@ runs the pipeline, and displays the main artifacts. For a first check, enable
 
 ### Execution scale profiles
 
-The same scientific code can be run with five explicit profiles:
+The same scientific code can be run with six explicit profiles:
 
 | Profile | Configuration | Intended use |
 |---|---|---|
 | `smoke` | `configs/run_smoke_2026.yaml` | Up to 1,000 items; input/schema and fast Colab checks |
 | `full-smoke` | `configs/run_full_smoke_1k_2026.yaml` | Up to 1,000 items; sparse plus SBERT and LaBSE timing |
 | `20k` | `configs/run_20k_2026.yaml` | Historical-scale comparison and E0/E1 continuity |
+| `full-20k` | `configs/run_full_20k_2026.yaml` | All 231 sparse and dense combinations on a stratified 20,000-item sample |
 | `full-final` | `configs/run_full_final_2026.yaml` | All 231 sparse and dense combinations on every eligible item and 37 labels |
 | `full` | `configs/run_full_corpus_2026.yaml` | Every eligible item; resumable sparse plus dense execution |
 

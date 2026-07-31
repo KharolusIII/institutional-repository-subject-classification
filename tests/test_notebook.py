@@ -23,6 +23,8 @@ def test_colab_uses_repo_specific_secret_without_tokenized_remote():
     assert "drive_text_cache" in source
     assert "'full-smoke': 'configs/run_full_smoke_1k_2026.yaml'" in source
     assert "'full-final': 'configs/run_full_final_2026.yaml'" in source
+    assert "'full-20k': 'configs/run_full_20k_2026.yaml'" in source
+    assert "EXECUTION_PROFILE = 'full-20k'" in source
     assert "EXECUTION_STAGE = 'all'" in source
     assert "USE_DUMMY_DATA = False" in source
     assert "materialized_fulltext_parquet" in source

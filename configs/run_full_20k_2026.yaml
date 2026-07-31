@@ -1,0 +1,9 @@
+extends: run_full_final_2026.yaml
+experiment:
+  name: full_20k_231_combinations_2026
+  seed: 42
+  output_dir: outputs
+  log_level: INFO
+  resume: true
+  stage: all
+sampling: {target_n: 20000, buffer: 0, method: stratified}
