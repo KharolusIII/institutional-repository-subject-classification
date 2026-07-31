@@ -3,16 +3,18 @@ import pandas as pd
 from ir_subject_classification.pipeline import attach_selected_fulltext
 
 
-def test_partial_materialized_parquet_is_authoritative(tmp_path):
+def test_partial_materialized_parquet_is_authoritative(tmp_path, monkeypatch):
     parquet = tmp_path / "fulltext.parquet"
-    pd.DataFrame(
+    materialized = pd.DataFrame(
         {
             "handle": ["one"],
             "fulltext": ["available text"],
             "fulltext_source_characters": [14],
             "fulltext_truncated": [False],
         }
-    ).to_parquet(parquet, index=False)
+    )
+    parquet.touch()
+    monkeypatch.setattr(pd, "read_parquet", lambda path: materialized.copy())
     dataset = pd.DataFrame(
         {
             "handle": ["one", "missing"],
