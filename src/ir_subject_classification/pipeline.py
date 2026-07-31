@@ -187,12 +187,17 @@ def attach_selected_fulltext(
         materialized = pd.read_parquet(materialized_path)
         materialized["handle"] = materialized["handle"].astype(str)
         available = set(materialized["handle"])
-        if requested_handles.issubset(available):
-            fulltext = materialized[
-                materialized["handle"].isin(requested_handles)
-            ].reset_index(drop=True)
-        else:
-            materialized = None
+        fulltext = materialized[
+            materialized["handle"].isin(requested_handles)
+        ].reset_index(drop=True)
+        LOGGER.info(
+            "Using materialized fulltext Parquet: requested_handles=%d "
+            "available_handles=%d missing_handles=%d path=%s",
+            len(requested_handles),
+            len(set(fulltext["handle"])),
+            len(requested_handles - available),
+            materialized_path,
+        )
 
     if materialized is not None:
         pass
@@ -337,7 +342,16 @@ def run_pipeline(config: dict[str, Any]) -> Path:
     dataset = multilabel_sample(dataset, target_n, int(config["experiment"].get("seed", 42)))
     logger.info("Rows after sampling: %d", len(dataset))
     before_fulltext = len(dataset)
+    requested_fulltext_handles = set(dataset["handle"].astype(str))
     dataset = attach_selected_fulltext(config, dataset, mapped_fulltext)
+    available_fulltext_handles = set(dataset["handle"].astype(str))
+    pd.DataFrame(
+        {
+            "handle": sorted(
+                requested_fulltext_handles - available_fulltext_handles
+            )
+        }
+    ).to_csv(run_dir / "fulltext_missing_handles.csv", index=False)
     logger.info(
         "Fulltext read complete: requested_handles=%d non_empty_handles=%d",
         before_fulltext,
