@@ -2,10 +2,20 @@ import numpy as np
 
 from ir_subject_classification.finetuning import (
     _add_special_tokens,
+    _early_stopping_update,
     _encode_documents,
     aggregate_document_logits,
     aggregate_weighted_document_logits,
 )
+
+
+def test_early_stopping_tracks_significant_improvements_and_patience():
+    improved, best, stale, stop = _early_stopping_update(0.50, float("-inf"), 0, 0.002, 2)
+    assert (improved, best, stale, stop) == (True, 0.50, 0, False)
+    improved, best, stale, stop = _early_stopping_update(0.501, best, stale, 0.002, 2)
+    assert (improved, best, stale, stop) == (False, 0.50, 1, False)
+    improved, best, stale, stop = _early_stopping_update(0.49, best, stale, 0.002, 2)
+    assert (improved, best, stale, stop) == (False, 0.50, 2, True)
 
 
 def test_special_tokens_fall_back_to_bert_token_ids_for_transformers_5():

@@ -3,5 +3,7 @@ experiment:
   name: protocol_smoke_1k_v3_segmented_finetuned_2026
 sampling: {target_n: 1000, buffer: 0, method: stratified}
 finetuning:
-  epochs: 1
+  max_epochs: 1
+  early_stopping:
+    enabled: false
   checkpoint_steps: 100

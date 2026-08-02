@@ -43,6 +43,21 @@ def _add_special_tokens(tokenizer, token_ids: list[int]) -> list[int]:
     return [*prefix, *token_ids, *suffix]
 
 
+def _early_stopping_update(
+    metric: float,
+    best_metric: float,
+    epochs_without_improvement: int,
+    minimum_delta: float,
+    patience: int,
+) -> tuple[bool, float, int, bool]:
+    """Update maximization-based early stopping state."""
+    improved = metric > best_metric + minimum_delta
+    if improved:
+        return True, metric, 0, False
+    epochs_without_improvement += 1
+    return False, best_metric, epochs_without_improvement, epochs_without_improvement >= patience
+
+
 def aggregate_document_logits(logits: np.ndarray, document_ids: np.ndarray, count: int) -> np.ndarray:
     result = np.zeros((count, logits.shape[1]), dtype=np.float32)
     frequencies = np.zeros(count, dtype=np.int64)
@@ -208,8 +223,14 @@ def run_finetuning(dataset: pd.DataFrame, labels: list[str], config: dict, outpu
         )
         optimizer = torch.optim.AdamW(model.parameters(), lr=float(settings.get("learning_rate", 2e-5)))
         checkpoint = model_dir / "checkpoint.pt"
+        best_checkpoint = model_dir / "best_checkpoint.pt"
         start_epoch = 0
         resume_step = 0
+        best_metric = float("-inf")
+        best_epoch = 0
+        epochs_without_improvement = 0
+        early_stopped = False
+        epoch_history: list[dict[str, object]] = []
         if checkpoint.exists():
             state = torch.load(checkpoint, map_location=device, weights_only=False)
             if state.get("split_fingerprint") != split_fingerprint:
@@ -219,13 +240,65 @@ def run_finetuning(dataset: pd.DataFrame, labels: list[str], config: dict, outpu
             model.load_state_dict(state["model"]); optimizer.load_state_dict(state["optimizer"])
             start_epoch = int(state["epoch"])
             resume_step = int(state.get("step", 0))
+            best_metric = float(state.get("best_metric", float("-inf")))
+            best_epoch = int(state.get("best_epoch", 0))
+            epochs_without_improvement = int(state.get("epochs_without_improvement", 0))
+            early_stopped = bool(state.get("early_stopped", False))
+            epoch_history = list(state.get("epoch_history", []))
             if state.get("torch_rng") is not None:
                 torch.set_rng_state(state["torch_rng"])
             if device.type == "cuda" and state.get("cuda_rng") is not None:
                 torch.cuda.set_rng_state_all(state["cuda_rng"])
         accumulation = int(settings.get("gradient_accumulation_steps", 4))
         checkpoint_steps = int(settings.get("checkpoint_steps", 500))
-        for epoch in range(start_epoch, int(settings.get("epochs", 3))):
+        max_epochs = int(settings.get("max_epochs", settings.get("epochs", 3)))
+        early_settings = settings.get("early_stopping", {})
+        early_enabled = bool(early_settings.get("enabled", False))
+        patience = max(1, int(early_settings.get("patience", 1)))
+        minimum_delta = float(early_settings.get("minimum_delta", 0.0))
+        restore_best = bool(settings.get("restore_best_checkpoint", True))
+
+        def predict(split: str) -> np.ndarray:
+            loader = DataLoader(
+                ChunkDataset(encoded[split]),
+                batch_size=int(settings.get("eval_batch_size", 64)),
+                collate_fn=collate,
+            )
+            vectors = []
+            document_ids = []
+            model.eval()
+            with torch.no_grad():
+                for batch in loader:
+                    batch.pop("labels")
+                    batch.pop("weight")
+                    document_ids.extend(batch.pop("document_id").numpy().tolist())
+                    inputs = {key: value.to(device) for key, value in batch.items()}
+                    vectors.append(model(**inputs).logits.float().cpu().numpy())
+            return aggregate_weighted_document_logits(
+                np.concatenate(vectors),
+                np.asarray(document_ids),
+                encoded[split].document_weights,
+                len(split_indices[split]),
+            )
+
+        def checkpoint_payload(epoch_value: int, step_value: int) -> dict[str, object]:
+            return {
+                "epoch": epoch_value,
+                "step": step_value,
+                "model": model.state_dict(),
+                "optimizer": optimizer.state_dict(),
+                "torch_rng": torch.get_rng_state(),
+                "cuda_rng": torch.cuda.get_rng_state_all() if device.type == "cuda" else None,
+                "split_fingerprint": split_fingerprint,
+                "best_metric": best_metric,
+                "best_epoch": best_epoch,
+                "epochs_without_improvement": epochs_without_improvement,
+                "early_stopped": early_stopped,
+                "epoch_history": epoch_history,
+            }
+
+        training_epochs = range(start_epoch, max_epochs) if not early_stopped else range(0)
+        for epoch in training_epochs:
             generator = torch.Generator().manual_seed(int(config["experiment"].get("seed", 42)) + epoch)
             train_loader = DataLoader(
                 ChunkDataset(encoded["train"]), batch_size=int(settings.get("batch_size", 16)), shuffle=True,
@@ -252,23 +325,12 @@ def run_finetuning(dataset: pd.DataFrame, labels: list[str], config: dict, outpu
                 if step % accumulation == 0:
                     optimizer.step(); optimizer.zero_grad(set_to_none=True)
                 if checkpoint_steps and step % checkpoint_steps == 0:
-                    torch.save(
-                        {
-                            "epoch": epoch,
-                            "step": step,
-                            "model": model.state_dict(),
-                            "optimizer": optimizer.state_dict(),
-                            "torch_rng": torch.get_rng_state(),
-                            "cuda_rng": torch.cuda.get_rng_state_all() if device.type == "cuda" else None,
-                            "split_fingerprint": split_fingerprint,
-                        },
-                        checkpoint,
-                    )
+                    torch.save(checkpoint_payload(epoch, step), checkpoint)
                     LOGGER.info(
                         "Fine-tuning model=%s epoch=%d/%d step=%d/%d mean_loss=%.6f checkpoint=%s",
                         name,
                         epoch + 1,
-                        int(settings.get("epochs", 3)),
+                        max_epochs,
                         step,
                         len(train_loader),
                         running_loss / max(processed_steps, 1),
@@ -276,39 +338,90 @@ def run_finetuning(dataset: pd.DataFrame, labels: list[str], config: dict, outpu
                     )
             if len(train_loader) % accumulation:
                 optimizer.step(); optimizer.zero_grad(set_to_none=True)
-            torch.save(
-                {
-                    "epoch": epoch + 1,
-                    "step": 0,
-                    "model": model.state_dict(),
-                    "optimizer": optimizer.state_dict(),
-                    "split_fingerprint": split_fingerprint,
-                },
-                checkpoint,
+            mean_loss = running_loss / max(processed_steps, 1)
+            calibration_scores = predict("calibration")
+            validation_scores = predict("validation")
+            epoch_global_threshold, _ = optimize_global_threshold(
+                y_all[split_indices["calibration"]], calibration_scores, np.linspace(-6, 6, 49)
             )
+            epoch_thresholds = optimize_per_label_thresholds(
+                y_all[split_indices["calibration"]],
+                calibration_scores,
+                epoch_global_threshold,
+                int(config.get("thresholds", {}).get("minimum_label_support", 20)),
+                np.linspace(-6, 6, 49),
+            )
+            epoch_metrics = multilabel_metrics(
+                y_all[split_indices["validation"]],
+                apply_thresholds(validation_scores, epoch_thresholds),
+                validation_scores,
+            )
+            metric = float(epoch_metrics["f1_macro"])
+            improved, best_metric, epochs_without_improvement, should_stop = _early_stopping_update(
+                metric,
+                best_metric,
+                epochs_without_improvement,
+                minimum_delta,
+                patience,
+            )
+            if improved:
+                best_epoch = epoch + 1
+                torch.save(
+                    {
+                        "epoch": best_epoch,
+                        "metric": best_metric,
+                        "model": model.state_dict(),
+                        "split_fingerprint": split_fingerprint,
+                    },
+                    best_checkpoint,
+                )
+            epoch_history.append(
+                {
+                    "model": name,
+                    "epoch": epoch + 1,
+                    "train_loss": mean_loss,
+                    "validation_f1_macro": epoch_metrics["f1_macro"],
+                    "validation_f1_micro": epoch_metrics["f1_micro"],
+                    "validation_average_precision_macro": epoch_metrics["average_precision_macro"],
+                    "learning_rate": optimizer.param_groups[0]["lr"],
+                    "improved": improved,
+                    "best_epoch": best_epoch,
+                    "best_validation_f1_macro": best_metric,
+                }
+            )
+            pd.DataFrame(epoch_history).to_csv(model_dir / "epoch_history.csv", index=False)
+            early_stopped = early_enabled and should_stop
+            torch.save(checkpoint_payload(epoch + 1, 0), checkpoint)
             LOGGER.info(
-                "Fine-tuning epoch complete model=%s epoch=%d/%d mean_loss=%.6f",
+                "Fine-tuning epoch complete model=%s epoch=%d/%d mean_loss=%.6f validation_f1_macro=%.6f best_epoch=%d",
                 name,
                 epoch + 1,
-                int(settings.get("epochs", 3)),
-                running_loss / max(processed_steps, 1),
+                max_epochs,
+                mean_loss,
+                metric,
+                best_epoch,
             )
             resume_step = 0
+            if early_stopped:
+                LOGGER.info(
+                    "Early stopping model=%s epoch=%d best_epoch=%d best_validation_f1_macro=%.6f",
+                    name,
+                    epoch + 1,
+                    best_epoch,
+                    best_metric,
+                )
+                break
 
-        def predict(split: str) -> np.ndarray:
-            loader = DataLoader(ChunkDataset(encoded[split]), batch_size=int(settings.get("eval_batch_size", 64)), collate_fn=collate)
-            vectors=[]; document_ids=[]; model.eval()
-            with torch.no_grad():
-                for batch in loader:
-                    batch.pop("labels"); batch.pop("weight")
-                    document_ids.extend(batch.pop("document_id").numpy().tolist())
-                    inputs={key:value.to(device) for key,value in batch.items()}
-                    vectors.append(model(**inputs).logits.float().cpu().numpy())
-            return aggregate_weighted_document_logits(
-                np.concatenate(vectors),
-                np.asarray(document_ids),
-                encoded[split].document_weights,
-                len(split_indices[split]),
+        if restore_best and best_checkpoint.exists():
+            best_state = torch.load(best_checkpoint, map_location=device, weights_only=False)
+            if best_state.get("split_fingerprint") != split_fingerprint:
+                raise RuntimeError(f"Best checkpoint for {name} belongs to another dataset split")
+            model.load_state_dict(best_state["model"])
+            LOGGER.info(
+                "Restored best checkpoint model=%s epoch=%d validation_f1_macro=%.6f",
+                name,
+                int(best_state["epoch"]),
+                float(best_state["metric"]),
             )
 
         calibration_scores = predict("calibration")
@@ -321,7 +434,17 @@ def run_finetuning(dataset: pd.DataFrame, labels: list[str], config: dict, outpu
         metrics = multilabel_metrics(
             y_all[split_indices["validation"]], apply_thresholds(validation_scores, thresholds), validation_scores
         )
-        validation_rows.append({"model": name, "model_name": model_name, "feature_set": feature_set, **metrics})
+        validation_rows.append(
+            {
+                "model": name,
+                "model_name": model_name,
+                "feature_set": feature_set,
+                "selected_epoch": best_epoch,
+                "max_epochs": max_epochs,
+                "early_stopping_enabled": early_enabled,
+                **metrics,
+            }
+        )
         np.save(model_dir / "thresholds.npy", thresholds)
         tokenizer.save_pretrained(model_dir / "tokenizer")
         model.save_pretrained(model_dir / "model")

@@ -16,6 +16,7 @@ This checklist converts the limitations observed in the completed 20k run
 | Dense coverage described only the last call | Coverage is reported separately for train, calibration, and validation | `embedding_coverage_*.csv` |
 | SBERT and LaBSE were frozen | Both encoders receive supervised multi-label fine-tuning with BCE loss | `finetuning/results_validation.csv` |
 | Fine-tuning could be lost after a Colab interruption | Checkpoints are written every configured batch interval and every epoch | `finetuning/*/checkpoint.pt` |
+| A fixed epoch count could underfit or retain an overfit final state | Validation is measured each epoch; training stops with patience and restores the best Macro-F1 checkpoint | `finetuning/*/epoch_history.csv`, `finetuning/*/best_checkpoint.pt` |
 | A resumed run could recompute different splits after Drive availability changed | The usable cohort and four-way split are frozen once; every validation and fine-tuning checkpoint is bound to their SHA-256 fingerprint | `cohort_manifest.csv`, `split_manifest.csv`, `split_context.json` |
 | Runtime projection counted only the last resumed session | Active elapsed time is accumulated across sessions | `timing_sessions.csv`, `timing.csv`, `scaling_estimate.csv` |
 | A post-hoc transformer test could alter the winner | All candidates compete on validation; the global winner is frozen as the sole confirmatory result before any test metric is computed | `results_validation.csv`, `results_test.csv` |

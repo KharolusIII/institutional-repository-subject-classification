@@ -41,7 +41,10 @@ def test_execution_scale_profiles():
         "sbert_finetuned", "labse_finetuned",
     ]
     assert protocol_smoke_v3["sampling"]["target_n"] == 1000
-    assert protocol_smoke_v3["finetuning"]["epochs"] == 1
+    assert protocol_smoke_v3["finetuning"]["max_epochs"] == 1
+    assert protocol_smoke_v3["finetuning"]["early_stopping"]["enabled"] is False
+    assert full_20k_v3["finetuning"]["max_epochs"] == 5
+    assert full_20k_v3["finetuning"]["early_stopping"]["enabled"] is True
     assert full_corpus_v3["sampling"]["target_n"] is None
     assert full_final["sampling"]["target_n"] is None
     assert full_final["labels"]["top_k"] == 37

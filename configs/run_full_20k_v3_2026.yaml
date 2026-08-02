@@ -14,7 +14,14 @@ features:
   field_weights: {abstract: 0.25, keywords: 0.15, fulltext: 0.60}
 finetuning:
   enabled: true
-  epochs: 3
+  max_epochs: 5
+  restore_best_checkpoint: true
+  early_stopping:
+    enabled: true
+    patience: 2
+    minimum_delta: 0.002
+    metric: f1_macro
+    mode: max
   max_chunks_per_text_unit: 8
   checkpoint_steps: 500
   gradient_checkpointing: true

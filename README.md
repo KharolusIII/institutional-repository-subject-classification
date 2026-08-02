@@ -128,6 +128,10 @@ binary cross-entropy over uniformly sampled chunks from each document. It
 checkpoints every 500 training batches and after every epoch. Model selection
 uses validation, per-label thresholds use a separate calibration split, and
 the global validation winner is frozen before any test result is computed.
+Protocol v3 trains for at most five epochs, evaluates after every epoch, stops
+after two epochs without a material Macro-F1 improvement, and restores the
+best-validation checkpoint. The 1k smoke intentionally remains a one-epoch
+functional test.
 
 The global validation winner remains the single confirmatory result. Protocol
 v3 also pre-specifies the best-validation selection rule for each representation family
