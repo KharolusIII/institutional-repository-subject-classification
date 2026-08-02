@@ -95,6 +95,15 @@ Validation combinations, downloaded Drive texts, and embeddings are
 checkpointed. An interrupted run keeps a `RUN_INCOMPLETE` marker and is resumed
 on the next execution instead of starting over.
 
+Every run now freezes `cohort_manifest.csv` and `split_manifest.csv` before any
+model is selected. Resumed sessions restore those exact handles and assignments
+instead of recomputing a split from newly available files. Validation and
+fine-tuning checkpoints are bound to `split_context.json` by a SHA-256
+fingerprint; incompatible legacy artifacts fail closed and must never be mixed
+with a new test partition. Active session time is accumulated in
+`timing_sessions.csv`, so scaling estimates include resumed work rather than
+only the final Colab session.
+
 The `full-final` profile can be executed as five resumable Colab stages by
 setting `EXECUTION_STAGE` in the notebook:
 

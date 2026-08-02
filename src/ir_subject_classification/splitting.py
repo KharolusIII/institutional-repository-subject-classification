@@ -7,6 +7,33 @@ import pandas as pd
 from sklearn.preprocessing import MultiLabelBinarizer
 
 
+def multilabel_split_coverage(
+    frame: pd.DataFrame, calibration_required: bool = False, seed: int = 42
+) -> pd.DataFrame:
+    """Summarize label support for an existing, already-frozen split."""
+    mlb = MultiLabelBinarizer()
+    y = mlb.fit_transform(frame["labels"])
+    required = ["train", "validation", "test"] + (
+        ["calibration"] if calibration_required else []
+    )
+    rows = []
+    for position, label in enumerate(mlb.classes_):
+        supports = {
+            split: int(y[frame["split"].eq(split), position].sum())
+            for split in ("train", "calibration", "validation", "test")
+        }
+        rows.append(
+            {
+                "label": label,
+                "support_total": int(y[:, position].sum()),
+                **{f"support_{split}": value for split, value in supports.items()},
+                "present_in_all_splits": all(supports[split] > 0 for split in required),
+                "split_seed": seed,
+            }
+        )
+    return pd.DataFrame(rows)
+
+
 def multilabel_train_validation_test_split(
     frame: pd.DataFrame,
     validation_size: float = 0.15,

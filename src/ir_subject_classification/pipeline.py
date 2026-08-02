@@ -9,6 +9,7 @@ import json
 import logging
 import os
 import time
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
@@ -51,7 +52,7 @@ from .reporting import (
     write_json,
 )
 from .sampling import multilabel_sample, select_labels
-from .splitting import multilabel_train_validation_test_split
+from .splitting import multilabel_split_coverage, multilabel_train_validation_test_split
 from .thresholds import apply_thresholds, optimize_global_threshold, optimize_per_label_thresholds
 from .vectorizers import create_sparse_vectorizer
 
@@ -633,6 +634,86 @@ def _write_checkpoint(rows: list[dict[str, object]], path: Path) -> None:
     os.replace(temporary, path)
 
 
+def _freeze_cohort(dataset: pd.DataFrame, run_dir: Path) -> pd.DataFrame:
+    """Freeze the exact set of usable handles for every resumed session."""
+    path = run_dir / "cohort_manifest.csv"
+    handles = dataset["handle"].astype(str)
+    if path.exists():
+        frozen = pd.read_csv(path, dtype={"handle": str})["handle"].tolist()
+        available = set(handles)
+        missing = sorted(set(frozen) - available)
+        if missing:
+            raise RuntimeError(
+                f"Frozen cohort cannot be reconstructed: {len(missing)} handles are missing. "
+                "Restore the materialized/fulltext cache before resuming."
+            )
+        order = {handle: position for position, handle in enumerate(frozen)}
+        result = dataset[handles.isin(order)].copy()
+        result["_frozen_order"] = result["handle"].astype(str).map(order)
+        return result.sort_values("_frozen_order").drop(columns="_frozen_order").reset_index(drop=True)
+    pd.DataFrame({"handle": handles.tolist()}).to_csv(path, index=False)
+    return dataset.reset_index(drop=True)
+
+
+def _freeze_or_restore_split(
+    dataset: pd.DataFrame, run_dir: Path, split_config: dict, seed: int
+) -> tuple[pd.DataFrame, pd.DataFrame]:
+    """Create a split once, then restore that exact assignment on resume."""
+    manifest_path = run_dir / "split_manifest.csv"
+    if manifest_path.exists():
+        manifest = pd.read_csv(manifest_path, dtype={"handle": str})
+        if manifest["handle"].duplicated().any():
+            raise RuntimeError("Frozen split manifest contains duplicate handles")
+        assignment = manifest.set_index("handle")["split"]
+        handles = dataset["handle"].astype(str)
+        missing = sorted(set(assignment.index) - set(handles))
+        extra = sorted(set(handles) - set(assignment.index))
+        if missing or extra:
+            raise RuntimeError(
+                "Current cohort differs from the frozen split manifest: "
+                f"missing={len(missing)} extra={len(extra)}"
+            )
+        result = dataset.copy()
+        result["split"] = handles.map(assignment)
+        if result["split"].isna().any():
+            raise RuntimeError("Could not restore every frozen split assignment")
+    else:
+        result, _ = multilabel_train_validation_test_split(
+            dataset,
+            validation_size=float(split_config["validation_size"]),
+            test_size=float(split_config["test_size"]),
+            calibration_size=float(split_config.get("calibration_size", 0.0)),
+            seed=seed,
+            max_tries=int(split_config.get("max_tries", 40)),
+            group_column="content_group" if split_config.get("group_by_content", False) else None,
+        )
+        result[["handle", "split"]].assign(
+            handle=lambda frame: frame["handle"].astype(str)
+        ).to_csv(manifest_path, index=False)
+    coverage = multilabel_split_coverage(
+        result,
+        calibration_required=bool(split_config.get("calibration_size", 0.0)),
+        seed=seed,
+    )
+    return result, coverage
+
+
+def _split_fingerprint(dataset: pd.DataFrame) -> str:
+    """Fingerprint membership, labels, content identity, and split assignment."""
+    rows = []
+    for row in dataset[["handle", "labels", "content_group", "split"]].itertuples(index=False):
+        rows.append(
+            {
+                "handle": str(row.handle),
+                "labels": sorted(map(str, row.labels)),
+                "content_group": str(row.content_group),
+                "split": str(row.split),
+            }
+        )
+    payload = json.dumps(sorted(rows, key=lambda row: row["handle"]), sort_keys=True).encode("utf-8")
+    return hashlib.sha256(payload).hexdigest()
+
+
 def run_pipeline(config: dict[str, Any]) -> Path:
     run_id, run_dir = create_run_directory(
         config["experiment"].get("output_dir", "outputs"),
@@ -651,15 +732,42 @@ def run_pipeline(config: dict[str, Any]) -> Path:
     save_resolved_config(config, run_dir / "config_resolved.yaml")
     write_environment(run_dir / "environment.txt")
     (run_dir / "git_commit.txt").write_text(git_commit() + "\n", encoding="utf-8")
-    timings: list[dict[str, object]] = []
-
     started = time.perf_counter()
+    timings: list[dict[str, object]] = []
+    timing_sessions_path = run_dir / "timing_sessions.csv"
+    if timing_sessions_path.exists():
+        timing_sessions = pd.read_csv(timing_sessions_path).to_dict("records")
+    else:
+        timing_sessions = []
+    session_id = len(timing_sessions) + 1
+    timing_sessions.append(
+        {
+            "session_id": session_id,
+            "started_utc": datetime.now(timezone.utc).isoformat(),
+            "last_update_utc": datetime.now(timezone.utc).isoformat(),
+            "seconds": 0.0,
+            "status": "running",
+            "resumed": resumed,
+        }
+    )
+
+    def persist_session_timing(status: str = "running") -> float:
+        timing_sessions[-1]["last_update_utc"] = datetime.now(timezone.utc).isoformat()
+        timing_sessions[-1]["seconds"] = time.perf_counter() - started
+        timing_sessions[-1]["status"] = status
+        temporary = timing_sessions_path.with_suffix(".tmp")
+        pd.DataFrame(timing_sessions).to_csv(temporary, index=False)
+        os.replace(temporary, timing_sessions_path)
+        return float(sum(float(row.get("seconds", 0.0)) for row in timing_sessions))
+
+    persist_session_timing()
     stage = time.perf_counter()
     dataset, schema = construct_dataset(config)
     logger.info("Dataset constructed: %d handle-level rows before label selection", len(dataset))
     dataset, mapped_fulltext = prepare_fulltext_mapping(config, dataset)
     logger.info("Rows with an available fulltext mapping: %d", len(dataset))
     timings.append({"stage": "ingestion", "seconds": time.perf_counter() - stage})
+    persist_session_timing()
     schema.to_csv(run_dir / "target_schema_report.csv", index=False)
 
     labels_config = config.get("labels", {})
@@ -672,6 +780,7 @@ def run_pipeline(config: dict[str, Any]) -> Path:
     requested_fulltext_handles = set(dataset["handle"].astype(str))
     dataset = attach_selected_fulltext(config, dataset, mapped_fulltext)
     available_fulltext_handles = set(dataset["handle"].astype(str))
+    dataset = _freeze_cohort(dataset, run_dir)
     pd.DataFrame(
         {
             "handle": sorted(
@@ -743,6 +852,7 @@ def run_pipeline(config: dict[str, Any]) -> Path:
         dataset["fulltext_detected_language"].value_counts().to_dict(),
     )
     timings.append({"stage": "language_detection", "seconds": time.perf_counter() - stage})
+    persist_session_timing()
     if not abstract_language_segments.empty:
         from .language_ground_truth import language_ground_truth_reports
 
@@ -838,16 +948,23 @@ def run_pipeline(config: dict[str, Any]) -> Path:
     co_pairs.to_csv(run_dir / "label_pair_statistics.csv", index=False)
 
     split_config = config["split"]
-    dataset, coverage = multilabel_train_validation_test_split(
-        dataset,
-        validation_size=float(split_config["validation_size"]),
-        test_size=float(split_config["test_size"]),
-        calibration_size=float(split_config.get("calibration_size", 0.0)),
-        seed=int(config["experiment"].get("seed", 42)),
-        max_tries=int(split_config.get("max_tries", 40)),
-        group_column="content_group" if split_config.get("group_by_content", False) else None,
+    split_seed = int(config["experiment"].get("seed", 42))
+    dataset, coverage = _freeze_or_restore_split(
+        dataset, run_dir, split_config, split_seed
+    )
+    split_fingerprint = _split_fingerprint(dataset)
+    config["_split_fingerprint"] = split_fingerprint
+    write_json(
+        {
+            "fingerprint": split_fingerprint,
+            "documents": len(dataset),
+            "split_sizes": dataset["split"].value_counts().to_dict(),
+        },
+        run_dir / "split_context.json",
     )
     logger.info("Split sizes: %s", dataset["split"].value_counts().to_dict())
+    logger.info("Frozen split fingerprint=%s", split_fingerprint)
+    persist_session_timing()
     logger.info("Labels present in every split: %d/%d", int(coverage["present_in_all_splits"].sum()), len(coverage))
     coverage.to_csv(run_dir / "label_coverage_by_split.csv", index=False)
     split_export = dataset
@@ -885,6 +1002,7 @@ def run_pipeline(config: dict[str, Any]) -> Path:
     if execution_stage == "prepare":
         timings.append({"stage": "prepare_total", "seconds": time.perf_counter() - started})
         pd.DataFrame(timings).to_csv(run_dir / "timing_prepare.csv", index=False)
+        persist_session_timing("stage_completed")
         logger.info(
             "Preparation stage completed; rerun with stage=sparse, sbert, labse, or all"
         )
@@ -908,11 +1026,29 @@ def run_pipeline(config: dict[str, Any]) -> Path:
     if modes is None:
         modes = [config.get("preprocessing", {}).get("mode", "raw")]
     validation_checkpoint = run_dir / "results_validation_checkpoint.csv"
+    validation_context_path = run_dir / "results_validation_checkpoint.context.json"
     if validation_checkpoint.exists():
+        stored_context = (
+            json.loads(validation_context_path.read_text(encoding="utf-8"))
+            if validation_context_path.exists()
+            else {}
+        )
+        if stored_context.get("split_fingerprint") != split_fingerprint:
+            raise RuntimeError(
+                "Validation checkpoint does not match the frozen dataset split. "
+                "Start a new run_id; incompatible validation results will not be reused."
+            )
         validation_rows = pd.read_csv(validation_checkpoint).to_dict("records")
-        logger.info("Loaded %d completed validation combinations", len(validation_rows))
+        logger.info(
+            "Loaded %d completed validation combinations for split=%s",
+            len(validation_rows),
+            split_fingerprint[:12],
+        )
     else:
         validation_rows: list[dict[str, object]] = []
+        write_json(
+            {"split_fingerprint": split_fingerprint}, validation_context_path
+        )
     completed = {
         _experiment_key(
             str(row["preprocessing"]),
@@ -1177,6 +1313,7 @@ def run_pipeline(config: dict[str, Any]) -> Path:
         from .finetuning import run_finetuning
 
         finetuning_dir = run_finetuning(dataset, list(mlb.classes_), config, run_dir)
+        persist_session_timing()
         finetuning_validation = pd.read_csv(finetuning_dir / "results_validation.csv")
         for row in finetuning_validation.to_dict("records"):
             thresholds = np.load(finetuning_dir / str(row["model"]) / "thresholds.npy")
@@ -1210,6 +1347,7 @@ def run_pipeline(config: dict[str, Any]) -> Path:
         pd.DataFrame(timings).to_csv(
             run_dir / f"timing_{execution_stage}.csv", index=False
         )
+        persist_session_timing("stage_completed")
         logger.info(
             "Stage %s completed with %d total validation combinations; "
             "RUN_INCOMPLETE is retained for the next stage",
@@ -1568,7 +1706,7 @@ def run_pipeline(config: dict[str, Any]) -> Path:
         predictions.to_parquet(run_dir / "predictions_test.parquet", index=False)
     except ImportError:
         predictions.to_csv(run_dir / "predictions_test.csv", index=False)
-    total_seconds = time.perf_counter() - started
+    total_seconds = persist_session_timing("completed")
     timings.append({"stage": "total", "seconds": total_seconds})
     pd.DataFrame(timings).to_csv(run_dir / "timing.csv", index=False)
     documents_per_hour = len(dataset) * 3600 / max(total_seconds, 1)

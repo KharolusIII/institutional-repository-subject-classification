@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+import json
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -113,6 +114,24 @@ def run_finetuning(dataset: pd.DataFrame, labels: list[str], config: dict, outpu
     settings = config.get("finetuning", {})
     output = Path(output_dir) / "finetuning"
     output.mkdir(parents=True, exist_ok=True)
+    split_fingerprint = str(config.get("_split_fingerprint", ""))
+    context_path = output / "context.json"
+    if any(output.iterdir()):
+        stored_context = (
+            json.loads(context_path.read_text(encoding="utf-8"))
+            if context_path.exists()
+            else {}
+        )
+        if stored_context.get("split_fingerprint") != split_fingerprint:
+            raise RuntimeError(
+                "Fine-tuning artifacts do not match the frozen dataset split. "
+                "Start a new run_id; incompatible model checkpoints will not be reused."
+            )
+    else:
+        context_path.write_text(
+            json.dumps({"split_fingerprint": split_fingerprint}, indent=2) + "\n",
+            encoding="utf-8",
+        )
     if (output / "_VALIDATION_SUCCESS").exists():
         LOGGER.info("Reusing completed fine-tuning validation: %s", output)
         return output
@@ -193,6 +212,10 @@ def run_finetuning(dataset: pd.DataFrame, labels: list[str], config: dict, outpu
         resume_step = 0
         if checkpoint.exists():
             state = torch.load(checkpoint, map_location=device, weights_only=False)
+            if state.get("split_fingerprint") != split_fingerprint:
+                raise RuntimeError(
+                    f"Fine-tuning checkpoint for {name} belongs to a different dataset split"
+                )
             model.load_state_dict(state["model"]); optimizer.load_state_dict(state["optimizer"])
             start_epoch = int(state["epoch"])
             resume_step = int(state.get("step", 0))
@@ -237,6 +260,7 @@ def run_finetuning(dataset: pd.DataFrame, labels: list[str], config: dict, outpu
                             "optimizer": optimizer.state_dict(),
                             "torch_rng": torch.get_rng_state(),
                             "cuda_rng": torch.cuda.get_rng_state_all() if device.type == "cuda" else None,
+                            "split_fingerprint": split_fingerprint,
                         },
                         checkpoint,
                     )
@@ -253,7 +277,13 @@ def run_finetuning(dataset: pd.DataFrame, labels: list[str], config: dict, outpu
             if len(train_loader) % accumulation:
                 optimizer.step(); optimizer.zero_grad(set_to_none=True)
             torch.save(
-                {"epoch": epoch + 1, "step": 0, "model": model.state_dict(), "optimizer": optimizer.state_dict()},
+                {
+                    "epoch": epoch + 1,
+                    "step": 0,
+                    "model": model.state_dict(),
+                    "optimizer": optimizer.state_dict(),
+                    "split_fingerprint": split_fingerprint,
+                },
                 checkpoint,
             )
             LOGGER.info(
