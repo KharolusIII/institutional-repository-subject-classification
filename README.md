@@ -84,6 +84,7 @@ The same scientific code can be run with six explicit profiles:
 | `full-smoke` | `configs/run_full_smoke_1k_2026.yaml` | Up to 1,000 items; sparse plus SBERT and LaBSE timing |
 | `20k` | `configs/run_20k_2026.yaml` | Historical-scale comparison and E0/E1 continuity |
 | `full-20k` | `configs/run_full_20k_2026.yaml` | All 231 sparse and dense combinations on a stratified 20,000-item sample |
+| `full-20k-v2` | `configs/run_full_20k_v2_2026.yaml` | Calibrated 20k protocol plus resumable supervised SBERT/LaBSE fine-tuning |
 | `full-final` | `configs/run_full_final_2026.yaml` | All 231 sparse and dense combinations on every eligible item and 37 labels |
 | `full` | `configs/run_full_corpus_2026.yaml` | Every eligible item; resumable sparse plus dense execution |
 
@@ -109,6 +110,12 @@ stored as Zstandard-compressed Parquet, while dense vectors use atomic,
 batch-sharded NumPy caches keyed by model, pooling configuration, and document
 contents. A disconnection can therefore lose at most the currently encoded
 document batch rather than an entire representation.
+
+The `full-20k-v2` notebook also fine-tunes multilingual SBERT and LaBSE with
+binary cross-entropy over uniformly sampled chunks from each document. It
+checkpoints every 500 training batches and after every epoch. Model selection
+uses validation, per-label thresholds use a separate calibration split, and
+only the frozen validation winner is evaluated on test.
 
 The 20k profile is retained as an experimental control, not as a permanent
 limit. Results across scales must be reported separately because their
@@ -182,8 +189,11 @@ and `target_schema_report.csv` records label, source field, and support.
 
 ## Language policy
 
-DSpace suffixes such as `[es]` are audit metadata, not ground truth.
-Abstract and full text are detected independently. Keyword detection is
+DSpace suffixes such as `[es]` identify the language of the metadata field,
+not necessarily the document. Values stored in `dc.language*` and legacy
+`sedici2003.idioma[es]` are retained as declared document languages for audit,
+not treated as ground truth. LangID content detection drives preprocessing;
+abstract and full text are detected independently. Keyword detection is
 best-effort and becomes `und` when evidence is insufficient.
 
 Language-specific stopword removal is available only for BoW, TF-IDF, and

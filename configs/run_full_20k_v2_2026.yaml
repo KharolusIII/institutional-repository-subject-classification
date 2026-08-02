@@ -1,0 +1,35 @@
+extends: run_full_20k_2026.yaml
+experiment:
+  name: full_20k_v2_calibrated_2026
+  seed: 42
+  output_dir: outputs
+  log_level: INFO
+  resume: true
+  stage: all
+split:
+  calibration_size: 0.10
+  validation_size: 0.10
+  test_size: 0.15
+  max_tries: 40
+language:
+  enabled: true
+  backend: langid
+  keyword_min_chars: 20
+  fulltext_segments: 5
+  segment_chars: 4000
+thresholds: {mode: per_label_threshold, minimum_label_support: 20}
+finetuning:
+  enabled: true
+  feature_set: abstract+keywords+fulltext
+  models:
+    sbert_finetuned: sentence-transformers/distiluse-base-multilingual-cased-v1
+    labse_finetuned: sentence-transformers/LaBSE
+  epochs: 3
+  learning_rate: 0.00002
+  batch_size: 16
+  eval_batch_size: 64
+  gradient_accumulation_steps: 4
+  checkpoint_steps: 500
+  max_length: 256
+  max_chunks_per_document: 8
+  num_workers: 2

@@ -68,6 +68,21 @@ def construct_dataset(config: dict[str, Any]) -> tuple[pd.DataFrame, pd.DataFram
     schema = target_schema_report(metadata, data["target_columns"])
     abstract_columns = _resolve_columns(metadata, data.get("abstract_columns"), "abstract")
     keyword_columns = _resolve_columns(metadata, data.get("keyword_columns"), "keywords")
+    language_columns = [
+        column
+        for column in metadata.columns
+        if column.startswith("dc.language") or column == "sedici2003.idioma[es]"
+    ]
+
+    def declared_document_language(row: pd.Series) -> str:
+        values: set[str] = set()
+        for column in language_columns:
+            for value in str(row.get(column, "") or "").split("||"):
+                code = value.strip().lower().split("-", 1)[0]
+                if code and code not in {"nan", "none", "other", "und"}:
+                    values.add(code)
+        return next(iter(values)) if len(values) == 1 else ("mul" if values else "und")
+
     def declared_abstract_language(row: pd.Series) -> str:
         languages = []
         for column in abstract_columns:
@@ -87,6 +102,7 @@ def construct_dataset(config: dict[str, Any]) -> tuple[pd.DataFrame, pd.DataFram
             "handle": handles,
             "abstract": metadata.apply(lambda row: combine_columns(row, abstract_columns), axis=1),
             "abstract_declared_language": metadata.apply(declared_abstract_language, axis=1),
+            "fulltext_declared_language": metadata.apply(declared_document_language, axis=1),
             "keywords": metadata.apply(lambda row: combine_columns(row, keyword_columns, keywords=True), axis=1),
             "labels": metadata.apply(lambda row: parse_labels(row, data["target_columns"]), axis=1),
         }
@@ -107,6 +123,9 @@ def construct_dataset(config: dict[str, Any]) -> tuple[pd.DataFrame, pd.DataFram
                 "abstract": lambda values: " ".join(dict.fromkeys(filter(None, values))),
                 "abstract_declared_language": lambda values: (
                     next(iter(set(values))) if len(set(values)) == 1 else "und"
+                ),
+                "fulltext_declared_language": lambda values: (
+                    next(iter(set(values))) if len(set(values)) == 1 else "mul"
                 ),
                 "keywords": lambda values: " ".join(dict.fromkeys(filter(None, values))),
                 "fulltext": lambda values: "\n\n".join(filter(None, values))[: int(data.get("max_fulltext_chars", 100000))],
@@ -249,18 +268,42 @@ def add_language_columns(frame: pd.DataFrame, config: dict[str, Any]) -> pd.Data
     language_config = config.get("language", {})
     detector = create_language_detector(language_config.get("backend", "heuristic"))
     keyword_min = int(language_config.get("keyword_min_chars", 20))
+    segment_count = int(language_config.get("fulltext_segments", 5))
+    segment_chars = int(language_config.get("segment_chars", 4000))
+
+    def detect_value(text: object, distributed: bool = False) -> tuple[str, float | None]:
+        value = str(text or "")
+        if not value.strip():
+            return "und", None
+        if distributed and len(value) > segment_chars and segment_count > 1:
+            starts = np.linspace(0, len(value) - segment_chars, segment_count, dtype=int)
+            candidates = [detector.detect(value[start : start + segment_chars]) for start in starts]
+            counts: dict[str, int] = {}
+            for candidate in candidates:
+                counts[candidate.language] = counts.get(candidate.language, 0) + 1
+            language = max(counts, key=lambda item: (counts[item], item != "und"))
+            scores = [
+                candidate.score
+                for candidate in candidates
+                if candidate.language == language and candidate.score is not None
+            ]
+            return language, float(np.mean(scores)) if scores else None
+        prediction = detector.detect(value)
+        return prediction.language, prediction.score
+
     for field in ("abstract", "fulltext", "keywords"):
         predictions = []
         for text in result[field]:
             if field == "keywords" and len(str(text).strip()) < keyword_min:
                 predictions.append(("und", None))
             else:
-                prediction = detector.detect(str(text))
-                predictions.append((prediction.language, prediction.score))
+                predictions.append(detect_value(text, distributed=field == "fulltext"))
         result[f"{field}_detected_language"] = [value[0] for value in predictions]
         result[f"{field}_language_score"] = [value[1] for value in predictions]
     if "abstract_declared_language" not in result:
         result["abstract_declared_language"] = "und"
+    if "fulltext_declared_language" not in result:
+        result["fulltext_declared_language"] = "und"
     return result
 
 
@@ -292,6 +335,33 @@ def build_transformer_text(frame: pd.DataFrame, feature_set: str) -> list[str]:
 
 def _default_threshold(score_kind: str) -> float:
     return 0.5 if score_kind == "probabilities" else 0.0
+
+
+def _calibrate_threshold(
+    config: dict[str, Any], y_true: np.ndarray, scores: np.ndarray, score_kind: str
+) -> float | np.ndarray:
+    mode = config.get("thresholds", {}).get("mode", "default")
+    if mode == "default":
+        return _default_threshold(score_kind)
+    candidates = (
+        np.linspace(0.05, 0.95, 19)
+        if score_kind == "probabilities"
+        else np.unique(
+            np.concatenate(
+                ([0.0], np.quantile(np.asarray(scores), np.linspace(0.02, 0.98, 49)))
+            )
+        )
+    )
+    global_threshold, _ = optimize_global_threshold(y_true, scores, candidates)
+    if mode == "per_label_threshold":
+        return optimize_per_label_thresholds(
+            y_true,
+            scores,
+            global_threshold,
+            int(config["thresholds"].get("minimum_label_support", 20)),
+            candidates,
+        )
+    return global_threshold
 
 
 def _experiment_key(
@@ -404,13 +474,49 @@ def run_pipeline(config: dict[str, Any]) -> Path:
         language_distribution(dataset[f"{field}_detected_language"]).to_csv(
             run_dir / f"{field}_language_distribution.csv", index=False
         )
-    agreement = (
-        dataset.groupby(["abstract_declared_language", "abstract_detected_language"], dropna=False)
-        .size()
-        .reset_index(name="N")
-    )
-    agreement["agreement"] = agreement["abstract_declared_language"] == agreement["abstract_detected_language"]
+    agreement_rows = []
+    for field in ("abstract", "fulltext"):
+        declared_column = f"{field}_declared_language"
+        detected_column = f"{field}_detected_language"
+        grouped = (
+            dataset.groupby([declared_column, detected_column], dropna=False)
+            .size()
+            .reset_index(name="N")
+        )
+        for row in grouped.itertuples(index=False):
+            declared, detected, count = row
+            agreement_rows.append(
+                {
+                    "field": field,
+                    "declared_language": declared,
+                    "detected_language": detected,
+                    "N": count,
+                    "agreement": declared == detected,
+                }
+            )
+    agreement = pd.DataFrame(agreement_rows)
     agreement.to_csv(run_dir / "language_agreement.csv", index=False)
+    agreement_summary = []
+    for field in ("abstract", "fulltext"):
+        field_rows = agreement[agreement["field"].eq(field)]
+        auditable = field_rows[
+            ~field_rows["declared_language"].isin(["und", "mul"])
+            & field_rows["detected_language"].ne("und")
+        ]
+        total = int(auditable["N"].sum())
+        matches = int(auditable.loc[auditable["agreement"], "N"].sum())
+        agreement_summary.append(
+            {
+                "field": field,
+                "auditable_N": total,
+                "agreement_N": matches,
+                "disagreement_N": total - matches,
+                "agreement_rate": matches / total if total else np.nan,
+            }
+        )
+    pd.DataFrame(agreement_summary).to_csv(
+        run_dir / "language_agreement_summary.csv", index=False
+    )
     language_subject = dataset.explode("labels").groupby(["abstract_detected_language", "labels"]).size().reset_index(name="N")
     language_subject.to_csv(run_dir / "language_by_subject.csv", index=False)
 
@@ -424,10 +530,11 @@ def run_pipeline(config: dict[str, Any]) -> Path:
     split_config = config["split"]
     dataset, coverage = multilabel_train_validation_test_split(
         dataset,
-        float(split_config["validation_size"]),
-        float(split_config["test_size"]),
-        int(config["experiment"].get("seed", 42)),
-        int(split_config.get("max_tries", 40)),
+        validation_size=float(split_config["validation_size"]),
+        test_size=float(split_config["test_size"]),
+        calibration_size=float(split_config.get("calibration_size", 0.0)),
+        seed=int(config["experiment"].get("seed", 42)),
+        max_tries=int(split_config.get("max_tries", 40)),
     )
     logger.info("Split sizes: %s", dataset["split"].value_counts().to_dict())
     logger.info("Labels present in every split: %d/%d", int(coverage["present_in_all_splits"].sum()), len(coverage))
@@ -468,6 +575,9 @@ def run_pipeline(config: dict[str, Any]) -> Path:
     y_all = mlb.fit_transform(dataset["labels"])
     train_idx = np.flatnonzero(dataset["split"].eq("train"))
     validation_idx = np.flatnonzero(dataset["split"].eq("validation"))
+    calibration_idx = np.flatnonzero(dataset["split"].eq("calibration"))
+    if not len(calibration_idx):
+        calibration_idx = validation_idx
     test_idx = np.flatnonzero(dataset["split"].eq("test"))
     sparse_representations = [
         item
@@ -537,6 +647,7 @@ def run_pipeline(config: dict[str, Any]) -> Path:
                 timings.append({"stage": "representation_fit", "feature_set": feature_set, "representation": representation, "seconds": time.perf_counter() - stage})
                 stage = time.perf_counter()
                 x_validation = vectorizer.transform([texts[i] for i in validation_idx])
+                x_calibration = vectorizer.transform([texts[i] for i in calibration_idx])
                 timings.append({"stage": "representation_transform", "feature_set": feature_set, "representation": representation, "seconds": time.perf_counter() - stage})
                 for classifier_name in pending_classifiers:
                     classifier = create_classifier(
@@ -548,8 +659,11 @@ def run_pipeline(config: dict[str, Any]) -> Path:
                     classifier.fit(x_train, y_all[train_idx])
                     fit_time = time.perf_counter() - stage
                     stage = time.perf_counter()
-                    scores, score_kind = prediction_scores(classifier, x_validation)
-                    threshold = _default_threshold(score_kind)
+                    calibration_scores, score_kind = prediction_scores(classifier, x_calibration)
+                    threshold = _calibrate_threshold(
+                        config, y_all[calibration_idx], calibration_scores, score_kind
+                    )
+                    scores, _ = prediction_scores(classifier, x_validation)
                     prediction = apply_thresholds(scores, threshold)
                     prediction_time = time.perf_counter() - stage
                     metrics = multilabel_metrics(y_all[validation_idx], prediction, scores)
@@ -561,6 +675,9 @@ def run_pipeline(config: dict[str, Any]) -> Path:
                             "representation": representation,
                             "classifier": classifier_name,
                             "score_kind": score_kind,
+                            "threshold": json.dumps(
+                                threshold.tolist() if isinstance(threshold, np.ndarray) else float(threshold)
+                            ),
                             **metrics,
                         }
                     )
@@ -639,6 +756,7 @@ def run_pipeline(config: dict[str, Any]) -> Path:
                 )
                 stage = time.perf_counter()
                 x_train = embedder.encode([texts[i] for i in train_idx])
+                x_calibration = embedder.encode([texts[i] for i in calibration_idx])
                 x_validation = embedder.encode([texts[i] for i in validation_idx])
                 embedding_statistics = {
                     "feature_set": feature_set,
@@ -667,8 +785,12 @@ def run_pipeline(config: dict[str, Any]) -> Path:
                     classifier.fit(x_train, y_all[train_idx])
                     fit_time = time.perf_counter() - stage
                     stage = time.perf_counter()
-                    scores, score_kind = prediction_scores(classifier, x_validation)
-                    prediction = apply_thresholds(scores, _default_threshold(score_kind))
+                    calibration_scores, score_kind = prediction_scores(classifier, x_calibration)
+                    threshold = _calibrate_threshold(
+                        config, y_all[calibration_idx], calibration_scores, score_kind
+                    )
+                    scores, _ = prediction_scores(classifier, x_validation)
+                    prediction = apply_thresholds(scores, threshold)
                     prediction_time = time.perf_counter() - stage
                     metrics = multilabel_metrics(y_all[validation_idx], prediction, scores)
                     validation_rows.append(
@@ -679,6 +801,9 @@ def run_pipeline(config: dict[str, Any]) -> Path:
                             "representation": representation_name,
                             "classifier": classifier_name,
                             "score_kind": score_kind,
+                            "threshold": json.dumps(
+                                threshold.tolist() if isinstance(threshold, np.ndarray) else float(threshold)
+                            ),
                             **metrics,
                         }
                     )
@@ -775,6 +900,7 @@ def run_pipeline(config: dict[str, Any]) -> Path:
         best.classifier,
         best.f1_macro,
     )
+    final_train_idx = np.concatenate([train_idx, validation_idx])
     if best.preprocessing == "transformer_minimal":
         final_texts = build_transformer_text(dataset, best.feature_set)
         representation, embedding_mode = str(best.representation).split(":", 1)
@@ -798,16 +924,16 @@ def run_pipeline(config: dict[str, Any]) -> Path:
             document_batch_size=int(embedding_config.get("document_batch_size", 32)),
             cache_dir=embedding_cache if embedding_config.get("cache", True) else None,
         )
-        x_train = vectorizer.encode([final_texts[i] for i in train_idx])
+        x_train = vectorizer.encode([final_texts[i] for i in final_train_idx])
         classifier = create_classifier(
             str(best.classifier),
             config["classifiers"].get(str(best.classifier), {}),
             int(config["experiment"].get("seed", 42)),
         )
-        classifier.fit(x_train, y_all[train_idx])
+        classifier.fit(x_train, y_all[final_train_idx])
         score_kind = str(best.score_kind)
         x_test = vectorizer.encode([final_texts[i] for i in test_idx])
-        validation_text = vectorizer.encode([final_texts[i] for i in validation_idx])
+        calibration_text = vectorizer.encode([final_texts[i] for i in calibration_idx])
     else:
         final_texts = build_feature_text(dataset, best.feature_set, best.preprocessing)
         params = config["representations"]
@@ -822,32 +948,22 @@ def run_pipeline(config: dict[str, Any]) -> Path:
             k1=bm25.get("k1", 1.5),
             b=bm25.get("b", 0.75),
         )
-        x_train = vectorizer.fit_transform([final_texts[i] for i in train_idx])
+        x_train = vectorizer.fit_transform([final_texts[i] for i in final_train_idx])
         classifier = create_classifier(
             str(best.classifier),
             config["classifiers"].get(str(best.classifier), {}),
             int(config["experiment"].get("seed", 42)),
         )
-        classifier.fit(x_train, y_all[train_idx])
+        classifier.fit(x_train, y_all[final_train_idx])
         score_kind = str(best.score_kind)
         x_test = vectorizer.transform([final_texts[i] for i in test_idx])
-        validation_text = vectorizer.transform([final_texts[i] for i in validation_idx])
-    validation_scores, _ = prediction_scores(classifier, validation_text)
+        calibration_text = vectorizer.transform([final_texts[i] for i in calibration_idx])
+    calibration_scores, _ = prediction_scores(classifier, calibration_text)
     test_scores, _ = prediction_scores(classifier, x_test)
-    default = _default_threshold(score_kind)
     threshold_mode = config.get("thresholds", {}).get("mode", "default")
-    if threshold_mode == "global_threshold":
-        threshold, _ = optimize_global_threshold(y_all[validation_idx], validation_scores)
-    elif threshold_mode == "per_label_threshold":
-        global_threshold, _ = optimize_global_threshold(y_all[validation_idx], validation_scores)
-        threshold = optimize_per_label_thresholds(
-            y_all[validation_idx],
-            validation_scores,
-            global_threshold,
-            int(config["thresholds"].get("minimum_label_support", 20)),
-        )
-    else:
-        threshold = default
+    threshold = _calibrate_threshold(
+        config, y_all[calibration_idx], calibration_scores, score_kind
+    )
     test_prediction = apply_thresholds(test_scores, threshold)
     test_metrics = multilabel_metrics(y_all[test_idx], test_prediction, test_scores)
     logger.info(
@@ -894,13 +1010,20 @@ def run_pipeline(config: dict[str, Any]) -> Path:
         test_metrics,
         per_label,
     )
-    language_performance(
-        dataset.iloc[test_idx]["abstract_detected_language"].reset_index(drop=True),
-        y_all[test_idx],
-        test_prediction,
-        test_scores,
-        int(config.get("metrics", {}).get("language_min_support", 30)),
-    ).to_csv(run_dir / "language_performance.csv", index=False)
+    language_performance_rows = []
+    for field in ("abstract", "fulltext"):
+        frame = language_performance(
+            dataset.iloc[test_idx][f"{field}_detected_language"].reset_index(drop=True),
+            y_all[test_idx],
+            test_prediction,
+            test_scores,
+            int(config.get("metrics", {}).get("language_min_support", 30)),
+        )
+        frame.insert(0, "field", field)
+        language_performance_rows.append(frame)
+    pd.concat(language_performance_rows, ignore_index=True).to_csv(
+        run_dir / "language_performance.csv", index=False
+    )
     bootstrap = bootstrap_confidence_intervals(
         y_all[test_idx],
         test_prediction,
@@ -923,6 +1046,11 @@ def run_pipeline(config: dict[str, Any]) -> Path:
         predictions.to_parquet(run_dir / "predictions_test.parquet", index=False)
     except ImportError:
         predictions.to_csv(run_dir / "predictions_test.csv", index=False)
+    if config.get("finetuning", {}).get("enabled", False):
+        # Keep the optional torch/transformers stack out of sparse-only runs.
+        from .finetuning import run_finetuning
+
+        run_finetuning(dataset, list(mlb.classes_), config, run_dir)
     total_seconds = time.perf_counter() - started
     timings.append({"stage": "total", "seconds": total_seconds})
     pd.DataFrame(timings).to_csv(run_dir / "timing.csv", index=False)

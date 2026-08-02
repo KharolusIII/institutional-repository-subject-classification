@@ -63,15 +63,17 @@ class LinguaLanguageDetector:
 class LangidLanguageDetector:
     def __init__(self) -> None:
         try:
-            import langid
+            from langid.langid import LanguageIdentifier, model
         except ImportError as exc:
             raise ImportError("Install the 'language' extra to use langid") from exc
-        self._langid = langid
+        # The module-level classify function returns unnormalised log scores.
+        # Normalised probabilities are easier to audit and compare between rows.
+        self._identifier = LanguageIdentifier.from_modelstring(model, norm_probs=True)
 
     def detect(self, text: str) -> LanguagePrediction:
         if not str(text or "").strip():
             return LanguagePrediction("und", None)
-        language, score = self._langid.classify(text)
+        language, score = self._identifier.classify(str(text))
         return LanguagePrediction(language or "und", float(score))
 
 

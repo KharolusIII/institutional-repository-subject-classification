@@ -39,8 +39,9 @@ def validate_config(config: dict[str, Any]) -> None:
         raise ValueError(f"Missing configuration sections: {sorted(missing)}")
     val = float(config["split"].get("validation_size", 0.15))
     test = float(config["split"].get("test_size", 0.15))
-    if not 0 < val < 1 or not 0 < test < 1 or val + test >= 1:
-        raise ValueError("validation_size and test_size must be positive and sum to less than one")
+    calibration = float(config["split"].get("calibration_size", 0.0))
+    if not 0 < val < 1 or not 0 < test < 1 or calibration < 0 or val + test + calibration >= 1:
+        raise ValueError("validation, test, and calibration sizes must leave a positive train split")
     target_columns = config["data"].get("target_columns", [])
     if not target_columns:
         raise ValueError("data.target_columns must be explicit and non-empty")

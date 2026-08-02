@@ -29,6 +29,7 @@ plots = ["matplotlib>=3.7,<4", "seaborn>=0.13,<1"]
 dev = ["pytest>=7.4,<9", "pytest-cov>=4,<7", "nbformat>=5.9,<6"]
 all = [
   "lingua-language-detector>=2.0,<3",
+  "langid>=1.1.6,<2",
   "sentence-transformers>=3,<6",
   "torch>=2,<3",
   "pyarrow>=14,<24",

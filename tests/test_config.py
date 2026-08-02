@@ -5,6 +5,7 @@ def test_execution_scale_profiles():
     smoke = load_config("configs/run_smoke_2026.yaml")
     full_smoke = load_config("configs/run_full_smoke_1k_2026.yaml")
     full_20k = load_config("configs/run_full_20k_2026.yaml")
+    full_20k_v2 = load_config("configs/run_full_20k_v2_2026.yaml")
     full_final = load_config("configs/run_full_final_2026.yaml")
     medium = load_config("configs/run_20k_2026.yaml")
     full = load_config("configs/run_full_corpus_2026.yaml")
@@ -24,6 +25,11 @@ def test_execution_scale_profiles():
     ]
     assert full_20k["classifiers"]["enabled"] == ["logreg", "linear_svc", "sgd"]
     assert full_20k["experiment"]["name"] == "full_20k_231_combinations_2026"
+    assert full_20k_v2["language"]["backend"] == "langid"
+    assert full_20k_v2["split"]["calibration_size"] == 0.10
+    assert full_20k_v2["thresholds"]["mode"] == "per_label_threshold"
+    assert full_20k_v2["finetuning"]["enabled"] is True
+    assert set(full_20k_v2["finetuning"]["models"]) == {"sbert_finetuned", "labse_finetuned"}
     assert full_final["sampling"]["target_n"] is None
     assert full_final["labels"]["top_k"] == 37
     assert full_final["representations"]["enabled"] == [
