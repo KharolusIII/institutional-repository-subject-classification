@@ -85,6 +85,9 @@ The same scientific code can be run with six explicit profiles:
 | `20k` | `configs/run_20k_2026.yaml` | Historical-scale comparison and E0/E1 continuity |
 | `full-20k` | `configs/run_full_20k_2026.yaml` | All 231 sparse and dense combinations on a stratified 20,000-item sample |
 | `full-20k-v2` | `configs/run_full_20k_v2_2026.yaml` | Calibrated 20k protocol plus resumable supervised SBERT/LaBSE fine-tuning |
+| `protocol-smoke-v3` | `configs/run_protocol_smoke_1k_v3_2026.yaml` | End-to-end segmented 1k acceptance run, including fine-tuning |
+| `full-20k-v3` | `configs/run_full_20k_v3_2026.yaml` | Paper protocol: segmented multilingual units, calibrated comparison, and fine-tuning |
+| `full-v3` | `configs/run_full_corpus_v3_2026.yaml` | Same paper protocol over every eligible item |
 | `full-final` | `configs/run_full_final_2026.yaml` | All 231 sparse and dense combinations on every eligible item and 37 labels |
 | `full` | `configs/run_full_corpus_2026.yaml` | Every eligible item; resumable sparse plus dense execution |
 
@@ -116,6 +119,14 @@ binary cross-entropy over uniformly sampled chunks from each document. It
 checkpoints every 500 training batches and after every epoch. Model selection
 uses validation, per-label thresholds use a separate calibration split, and
 only the frozen validation winner is evaluated on test.
+
+Protocol v3 preserves every abstract value and every mapped full-text file as
+an independent text unit. Sparse preprocessing detects language per abstract
+and per full-text window. Dense and fine-tuned models aggregate hierarchically
+from chunks to text units and then to handles, with field weights normalized so
+that an item with more files does not receive more total weight. Explicit
+absence markers such as `No posee` are removed and audited. See
+[`docs/PROTOCOL_V3_CHECKLIST.md`](docs/PROTOCOL_V3_CHECKLIST.md).
 
 The 20k profile is retained as an experimental control, not as a permanent
 limit. Results across scales must be reported separately because their

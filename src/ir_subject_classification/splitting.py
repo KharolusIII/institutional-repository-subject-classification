@@ -14,8 +14,45 @@ def multilabel_train_validation_test_split(
     calibration_size: float = 0.0,
     seed: int = 42,
     max_tries: int = 40,
+    group_column: str | None = None,
 ) -> tuple[pd.DataFrame, pd.DataFrame]:
     from iterstrat.ml_stratifiers import MultilabelStratifiedShuffleSplit
+
+    if group_column and group_column in frame and frame[group_column].duplicated().any():
+        grouped = (
+            frame.groupby(group_column, as_index=False)["labels"]
+            .agg(lambda rows: sorted({label for values in rows for label in values}))
+        )
+        grouped_split, _ = multilabel_train_validation_test_split(
+            grouped,
+            validation_size=validation_size,
+            test_size=test_size,
+            calibration_size=calibration_size,
+            seed=seed,
+            max_tries=max_tries,
+        )
+        assignment = grouped_split.set_index(group_column)["split"]
+        result = frame.copy()
+        result["split"] = result[group_column].map(assignment)
+        mlb = MultiLabelBinarizer()
+        y = mlb.fit_transform(result["labels"])
+        coverage = []
+        for position, label in enumerate(mlb.classes_):
+            supports = {
+                split: int(y[result["split"].eq(split), position].sum())
+                for split in ("train", "calibration", "validation", "test")
+            }
+            required = ["train", "validation", "test"] + (["calibration"] if calibration_size else [])
+            coverage.append(
+                {
+                    "label": label,
+                    "support_total": int(y[:, position].sum()),
+                    **{f"support_{key}": value for key, value in supports.items()},
+                    "present_in_all_splits": all(supports[key] > 0 for key in required),
+                    "split_seed": int(grouped_split["split"].notna().any() and seed),
+                }
+            )
+        return result, pd.DataFrame(coverage)
 
     mlb = MultiLabelBinarizer()
     y = mlb.fit_transform(frame["labels"])

@@ -3,7 +3,7 @@ import pandas as pd
 from ir_subject_classification.pipeline import attach_selected_fulltext
 
 
-def test_partial_materialized_parquet_is_authoritative(tmp_path, monkeypatch):
+def test_partial_materialized_parquet_is_incrementally_completed(tmp_path, monkeypatch):
     parquet = tmp_path / "fulltext.parquet"
     materialized = pd.DataFrame(
         {
@@ -15,6 +15,21 @@ def test_partial_materialized_parquet_is_authoritative(tmp_path, monkeypatch):
     )
     parquet.touch()
     monkeypatch.setattr(pd, "read_parquet", lambda path: materialized.copy())
+    monkeypatch.setattr(
+        "ir_subject_classification.drive_api.read_selected_fulltext",
+        lambda mapped, handles, max_chars, cache_dir: pd.DataFrame(
+            {
+                "handle": ["missing"],
+                "fulltext": ["downloaded text"],
+                "fulltext_documents": [["downloaded text"]],
+                "fulltext_source_ids": [["file-missing"]],
+                "fulltext_source_characters": [15],
+                "fulltext_truncated": [False],
+            }
+        ),
+    )
+    monkeypatch.setattr(pd.DataFrame, "to_parquet", lambda self, path, **kwargs: None)
+    monkeypatch.setattr("ir_subject_classification.pipeline.os.replace", lambda source, target: None)
     dataset = pd.DataFrame(
         {
             "handle": ["one", "missing"],
@@ -36,5 +51,5 @@ def test_partial_materialized_parquet_is_authoritative(tmp_path, monkeypatch):
 
     result = attach_selected_fulltext(config, dataset, mapped)
 
-    assert result["handle"].tolist() == ["one"]
-    assert result["fulltext"].tolist() == ["available text"]
+    assert result["handle"].tolist() == ["one", "missing"]
+    assert result["fulltext"].tolist() == ["available text", "downloaded text"]

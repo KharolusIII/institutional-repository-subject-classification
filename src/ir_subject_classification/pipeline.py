@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 import ast
+import hashlib
 import json
 import logging
 import os
@@ -21,7 +22,15 @@ from .evaluation import language_performance, per_label_evaluation
 from .embeddings import DocumentEmbedder
 from .language import create_language_detector
 from .logging_utils import configure_run_logging
-from .metadata import combine_columns, discover_columns, parse_handle, parse_labels, target_schema_report
+from .metadata import (
+    combine_columns,
+    discover_columns,
+    extract_text_segments,
+    normalize_unicode_spaces,
+    parse_handle,
+    parse_labels,
+    target_schema_report,
+)
 from .metrics import bootstrap_confidence_intervals, multilabel_metrics
 from .preprocessing import preprocess_sparse, preprocess_transformer
 from .reporting import (
@@ -83,30 +92,37 @@ def construct_dataset(config: dict[str, Any]) -> tuple[pd.DataFrame, pd.DataFram
                     values.add(code)
         return next(iter(values)) if len(values) == 1 else ("mul" if values else "und")
 
-    def declared_abstract_language(row: pd.Series) -> str:
-        languages = []
-        for column in abstract_columns:
-            if str(row.get(column, "") or "").strip() and column.endswith("]") and "[" in column:
-                languages.append(column.rsplit("[", 1)[1][:-1].lower())
-        unique = sorted(set(languages))
-        return unique[0] if len(unique) == 1 else "und"
-
     handle_column = data.get("handle_column", "handle")
     if handle_column in metadata:
         handles = metadata[handle_column].map(parse_handle)
     else:
         uri_columns = discover_columns(list(metadata.columns))["uri"]
         handles = metadata[uri_columns].fillna("").agg(" ".join, axis=1).map(parse_handle)
+    abstract_parts = metadata.apply(
+        lambda row: extract_text_segments(row, abstract_columns), axis=1
+    )
     dataset = pd.DataFrame(
         {
             "handle": handles,
-            "abstract": metadata.apply(lambda row: combine_columns(row, abstract_columns), axis=1),
-            "abstract_declared_language": metadata.apply(declared_abstract_language, axis=1),
+            "abstract_segments": abstract_parts.map(lambda value: value[0]),
+            "abstract_segment_declared_languages": abstract_parts.map(lambda value: value[1]),
+            "abstract_missing_markers": abstract_parts.map(lambda value: value[2]),
             "fulltext_declared_language": metadata.apply(declared_document_language, axis=1),
             "keywords": metadata.apply(lambda row: combine_columns(row, keyword_columns, keywords=True), axis=1),
             "labels": metadata.apply(lambda row: parse_labels(row, data["target_columns"]), axis=1),
         }
     )
+    dataset["abstract"] = dataset["abstract_segments"].map("\n\n".join)
+    dataset["abstract_segment_records"] = [
+        list(zip(texts, languages))
+        for texts, languages in zip(
+            dataset["abstract_segments"],
+            dataset["abstract_segment_declared_languages"],
+        )
+    ]
+    dataset["abstract_declared_language"] = dataset[
+        "abstract_segment_declared_languages"
+    ].map(lambda values: values[0] if len(set(values)) == 1 and values else ("mul" if values else "und"))
     if "fulltext" in metadata:
         dataset["fulltext"] = metadata["fulltext"].fillna("").astype(str)
     else:
@@ -115,12 +131,22 @@ def construct_dataset(config: dict[str, Any]) -> tuple[pd.DataFrame, pd.DataFram
     dataset["fulltext"] = dataset["fulltext"].fillna("").astype(str).str.slice(
         stop=int(data.get("max_fulltext_chars", 100000))
     )
+    dataset["fulltext_documents"] = dataset["fulltext"].map(
+        lambda value: [value] if str(value).strip() else []
+    )
+    dataset["fulltext_source_ids"] = dataset["fulltext_documents"].map(
+        lambda values: ["inline:0"] if values else []
+    )
     dataset = dataset[dataset["handle"].notna() & dataset["labels"].map(bool)].copy()
     dataset = (
         dataset.groupby("handle", as_index=False)
         .agg(
             {
                 "abstract": lambda values: " ".join(dict.fromkeys(filter(None, values))),
+                "abstract_segment_records": lambda rows: list(
+                    dict.fromkeys(record for values in rows for record in values)
+                ),
+                "abstract_missing_markers": "sum",
                 "abstract_declared_language": lambda values: (
                     next(iter(set(values))) if len(set(values)) == 1 else "und"
                 ),
@@ -129,11 +155,28 @@ def construct_dataset(config: dict[str, Any]) -> tuple[pd.DataFrame, pd.DataFram
                 ),
                 "keywords": lambda values: " ".join(dict.fromkeys(filter(None, values))),
                 "fulltext": lambda values: "\n\n".join(filter(None, values))[: int(data.get("max_fulltext_chars", 100000))],
+                "fulltext_documents": lambda rows: list(
+                    dict.fromkeys(text for values in rows for text in values)
+                ),
+                "fulltext_source_ids": lambda rows: list(
+                    dict.fromkeys(source for values in rows for source in values)
+                ),
                 "labels": lambda values: sorted({label for labels in values for label in labels}),
             }
         )
         .reset_index(drop=True)
     )
+    dataset["abstract_segments"] = dataset["abstract_segment_records"].map(
+        lambda records: [record[0] for record in records]
+    )
+    dataset["abstract_segment_declared_languages"] = dataset[
+        "abstract_segment_records"
+    ].map(lambda records: [record[1] for record in records])
+    dataset = dataset.drop(columns=["abstract_segment_records"])
+    dataset["abstract"] = dataset["abstract_segments"].map("\n\n".join)
+    dataset["abstract_declared_language"] = dataset[
+        "abstract_segment_declared_languages"
+    ].map(lambda values: values[0] if len(set(values)) == 1 and values else ("mul" if values else "und"))
     return dataset, schema
 
 
@@ -204,50 +247,71 @@ def attach_selected_fulltext(
     materialized = None
     if materialized_path and materialized_path.exists():
         materialized = pd.read_parquet(materialized_path)
-        materialized["handle"] = materialized["handle"].astype(str)
-        available = set(materialized["handle"])
-        fulltext = materialized[
-            materialized["handle"].isin(requested_handles)
-        ].reset_index(drop=True)
-        LOGGER.info(
-            "Using materialized fulltext Parquet: requested_handles=%d "
-            "available_handles=%d missing_handles=%d path=%s",
-            len(requested_handles),
-            len(set(fulltext["handle"])),
-            len(requested_handles - available),
-            materialized_path,
-        )
+        if config["data"].get("preserve_text_segments", False) and not {
+            "fulltext_documents",
+            "fulltext_source_ids",
+        }.issubset(materialized.columns):
+            LOGGER.warning(
+                "Ignoring incompatible legacy fulltext Parquet without segment boundaries: %s",
+                materialized_path,
+            )
+            materialized = None
+        if materialized is not None:
+            materialized["handle"] = materialized["handle"].astype(str)
+            available = set(materialized["handle"])
+            fulltext = materialized[
+                materialized["handle"].isin(requested_handles)
+            ].reset_index(drop=True)
+            LOGGER.info(
+                "Using materialized fulltext Parquet: requested_handles=%d "
+                "available_handles=%d missing_handles=%d path=%s",
+                len(requested_handles),
+                len(set(fulltext["handle"])),
+                len(requested_handles - available),
+                materialized_path,
+            )
 
-    if materialized is not None:
-        pass
-    elif isinstance(mapped, list):
-        fulltext = read_fulltext_parquet(
-            mapped,
-            dataset["handle"],
-            int(config["data"].get("max_fulltext_chars", 100000)),
-        )
-    elif "drive_file_id" in mapped.columns:
-        from .drive_api import read_selected_fulltext
+    cached = fulltext if materialized is not None else pd.DataFrame()
+    cached_handles = set(cached["handle"].astype(str)) if not cached.empty else set()
+    missing_handles = requested_handles - cached_handles
+    downloaded = pd.DataFrame()
+    if missing_handles:
+        limit = int(config["data"].get("max_fulltext_chars", 100000))
+        if isinstance(mapped, list):
+            downloaded = read_fulltext_parquet(mapped, missing_handles, limit)
+        elif "drive_file_id" in mapped.columns:
+            from .drive_api import read_selected_fulltext
 
-        fulltext = read_selected_fulltext(
-            mapped,
-            dataset["handle"],
-            int(config["data"].get("max_fulltext_chars", 100000)),
-            config["data"].get("drive_text_cache"),
-        )
-    else:
-        fulltext = read_fulltext_txt(
-            mapped,
-            dataset["handle"],
-            int(config["data"].get("max_fulltext_chars", 100000)),
-        )
-    if materialized_path and materialized is None:
+            downloaded = read_selected_fulltext(
+                mapped,
+                list(missing_handles),
+                limit,
+                config["data"].get("drive_text_cache"),
+            )
+        else:
+            downloaded = read_fulltext_txt(mapped, missing_handles, limit)
+    fulltext = pd.concat([cached, downloaded], ignore_index=True)
+    if materialized_path and not downloaded.empty:
         materialized_path.parent.mkdir(parents=True, exist_ok=True)
         temporary = materialized_path.with_suffix(".tmp.parquet")
-        fulltext.to_parquet(temporary, index=False, compression="zstd")
+        consolidated = pd.concat(
+            [materialized if materialized is not None else pd.DataFrame(), downloaded],
+            ignore_index=True,
+        ).drop_duplicates("handle", keep="last")
+        consolidated.to_parquet(temporary, index=False, compression="zstd")
         os.replace(temporary, materialized_path)
-    result = dataset.drop(columns=["fulltext"], errors="ignore").merge(fulltext, on="handle", how="left")
+    result = dataset.drop(
+        columns=["fulltext", "fulltext_documents", "fulltext_source_ids"], errors="ignore"
+    ).merge(fulltext, on="handle", how="left")
     result["fulltext"] = result["fulltext"].fillna("").astype(str)
+    if "fulltext_documents" not in result:
+        result["fulltext_documents"] = result["fulltext"].map(
+            lambda value: [value] if str(value).strip() else []
+        )
+    if "fulltext_source_ids" not in result:
+        result["fulltext_source_ids"] = result["fulltext_documents"].map(
+            lambda values: [f"legacy:{index}" for index in range(len(values))]
+        )
     return result[result["fulltext"].str.strip().ne("")].reset_index(drop=True)
 
 
@@ -270,6 +334,10 @@ def add_language_columns(frame: pd.DataFrame, config: dict[str, Any]) -> pd.Data
     keyword_min = int(language_config.get("keyword_min_chars", 20))
     segment_count = int(language_config.get("fulltext_segments", 5))
     segment_chars = int(language_config.get("segment_chars", 4000))
+    preprocessing_segment_chars = int(
+        language_config.get("fulltext_preprocessing_segment_chars", 12000)
+    )
+    multilingual_min_share = float(language_config.get("multilingual_min_character_share", 0.20))
 
     def detect_value(text: object, distributed: bool = False) -> tuple[str, float | None]:
         value = str(text or "")
@@ -291,7 +359,75 @@ def add_language_columns(frame: pd.DataFrame, config: dict[str, Any]) -> pd.Data
         prediction = detector.detect(value)
         return prediction.language, prediction.score
 
-    for field in ("abstract", "fulltext", "keywords"):
+    def as_list(value: object) -> list[str]:
+        if isinstance(value, (list, tuple, np.ndarray)):
+            return [str(item) for item in value if str(item).strip()]
+        return [str(value)] if str(value or "").strip() else []
+
+    for field in ("abstract", "fulltext"):
+        source_column = "abstract_segments" if field == "abstract" else "fulltext_documents"
+        segment_languages = []
+        segment_scores = []
+        aggregate_languages = []
+        aggregate_scores = []
+        language_sets = []
+        for value in result[source_column]:
+            segments = as_list(value)
+            predictions = [detect_value(text, distributed=field == "fulltext") for text in segments]
+            languages = [prediction[0] for prediction in predictions]
+            scores = [prediction[1] for prediction in predictions]
+            segment_languages.append(languages)
+            segment_scores.append(scores)
+            weights: dict[str, int] = {}
+            for text, language in zip(segments, languages):
+                weights[language] = weights.get(language, 0) + len(text)
+            total_weight = sum(weight for language, weight in weights.items() if language != "und")
+            significant = sorted(
+                language
+                for language, weight in weights.items()
+                if language != "und" and weight / max(total_weight, 1) >= multilingual_min_share
+            )
+            dominant = max(weights, key=lambda language: (weights[language], language != "und")) if weights else "und"
+            aggregate = "mul" if len(significant) > 1 else dominant
+            matching_scores = [score for language, score in predictions if language == aggregate and score is not None]
+            language_sets.append(significant)
+            aggregate_languages.append(aggregate)
+            aggregate_scores.append(float(np.mean(matching_scores)) if matching_scores else None)
+        result[f"{field}_segment_languages"] = segment_languages
+        result[f"{field}_segment_language_scores"] = segment_scores
+        result[f"{field}_detected_language"] = aggregate_languages
+        result[f"{field}_language_score"] = aggregate_scores
+        result[f"{field}_detected_language_set"] = language_sets
+
+    fulltext_preprocessing_segments = []
+    fulltext_preprocessing_languages = []
+    for documents in result["fulltext_documents"]:
+        units = [
+            document[start : start + preprocessing_segment_chars]
+            for document in as_list(documents)
+            for start in range(0, len(document), preprocessing_segment_chars)
+        ]
+        predictions = [detect_value(unit) for unit in units]
+        fulltext_preprocessing_segments.append(units)
+        fulltext_preprocessing_languages.append([language for language, _ in predictions])
+    result["fulltext_preprocessing_segments"] = fulltext_preprocessing_segments
+    result["fulltext_preprocessing_segment_languages"] = fulltext_preprocessing_languages
+    for index, (units, languages) in enumerate(
+        zip(fulltext_preprocessing_segments, fulltext_preprocessing_languages)
+    ):
+        weights: dict[str, int] = {}
+        for unit, language in zip(units, languages):
+            weights[language] = weights.get(language, 0) + len(unit)
+        total = sum(weight for language, weight in weights.items() if language != "und")
+        significant = sorted(
+            language for language, weight in weights.items()
+            if language != "und" and weight / max(total, 1) >= multilingual_min_share
+        )
+        result.at[index, "fulltext_detected_language_set"] = significant
+        if len(significant) > 1:
+            result.at[index, "fulltext_detected_language"] = "mul"
+
+    for field in ("keywords",):
         predictions = []
         for text in result[field]:
             if field == "keywords" and len(str(text).strip()) < keyword_min:
@@ -307,6 +443,51 @@ def add_language_columns(frame: pd.DataFrame, config: dict[str, Any]) -> pd.Data
     return result
 
 
+def attach_abstract_language_ground_truth(
+    dataset: pd.DataFrame, config: dict[str, Any]
+) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
+    from .language_ground_truth import load_abstract_ground_truth, text_fingerprint
+
+    path = config.get("language", {}).get("abstract_ground_truth_csv")
+    result = dataset.copy()
+    if not path or not Path(path).is_file():
+        result["abstract_segment_ground_truth_languages"] = result["abstract_segments"].map(
+            lambda values: [None] * len(values)
+        )
+        return result, pd.DataFrame(), pd.DataFrame()
+    lookup, conflicts = load_abstract_ground_truth(
+        path, config.get("language", {}).get("abstract_ground_truth_cache")
+    )
+    audit_rows = []
+    ground_truth_lists = []
+    for row in result.itertuples(index=False):
+        ground_truth = []
+        declared = list(row.abstract_segment_declared_languages)
+        detected = list(row.abstract_segment_languages)
+        scores = list(row.abstract_segment_language_scores)
+        for index, text in enumerate(row.abstract_segments):
+            match = lookup.get((str(row.handle), text_fingerprint(text)))
+            language = match["language"] if match else None
+            source = match["source"] if match else None
+            ground_truth.append(language)
+            audit_rows.append(
+                {
+                    "handle": row.handle,
+                    "segment_index": index,
+                    "text_hash": text_fingerprint(text),
+                    "characters": len(text),
+                    "declared_language": declared[index] if index < len(declared) else "und",
+                    "detected_language": detected[index] if index < len(detected) else "und",
+                    "detection_score": scores[index] if index < len(scores) else None,
+                    "ground_truth_language": language,
+                    "ground_truth_source": source,
+                }
+            )
+        ground_truth_lists.append(ground_truth)
+    result["abstract_segment_ground_truth_languages"] = ground_truth_lists
+    return result, pd.DataFrame(audit_rows), conflicts
+
+
 def build_feature_text(frame: pd.DataFrame, feature_set: str, preprocessing: str) -> list[str]:
     fields = FEATURE_FIELDS[feature_set]
     parts = []
@@ -317,10 +498,37 @@ def build_feature_text(frame: pd.DataFrame, feature_set: str, preprocessing: str
             if field == "keywords" and preprocessing == "language_stopwords"
             else preprocessing
         )
-        values = [
-            preprocess_sparse(text, language, field_preprocessing)
-            for text, language in zip(frame[field], frame[language_column])
-        ]
+        if field in {"abstract", "fulltext"}:
+            segment_column = (
+                "abstract_segments" if field == "abstract" else "fulltext_preprocessing_segments"
+            )
+            segment_language_column = (
+                "abstract_segment_languages"
+                if field == "abstract"
+                else "fulltext_preprocessing_segment_languages"
+            )
+            segment_values = (
+                frame[segment_column]
+                if segment_column in frame
+                else frame[field].map(lambda value: [value] if str(value).strip() else [])
+            )
+            segment_languages = (
+                frame[segment_language_column]
+                if segment_language_column in frame
+                else frame[language_column].map(lambda value: [value])
+            )
+            values = [
+                "\n".join(
+                    preprocess_sparse(text, language, field_preprocessing)
+                    for text, language in zip(segments, languages)
+                )
+                for segments, languages in zip(segment_values, segment_languages)
+            ]
+        else:
+            values = [
+                preprocess_sparse(text, language, field_preprocessing)
+                for text, language in zip(frame[field], frame[language_column])
+            ]
         parts.append([f"{field.upper()}: {value}" for value in values])
     return ["\n".join(values) for values in zip(*parts)]
 
@@ -331,6 +539,40 @@ def build_transformer_text(frame: pd.DataFrame, feature_set: str) -> list[str]:
         "\n".join(f"{field.upper()}: {preprocess_transformer(row[field])}" for field in fields)
         for _, row in frame.iterrows()
     ]
+
+
+def build_transformer_segments(
+    frame: pd.DataFrame,
+    feature_set: str,
+    field_weights: dict[str, float] | None = None,
+) -> list[list[tuple[str, float]]]:
+    """Return independently weighted text units for hierarchical pooling."""
+    fields = FEATURE_FIELDS[feature_set]
+    configured = field_weights or {"abstract": 0.25, "keywords": 0.15, "fulltext": 0.60}
+    active_weights = {field: float(configured.get(field, 1.0)) for field in fields}
+    total = sum(active_weights.values()) or 1.0
+    active_weights = {field: weight / total for field, weight in active_weights.items()}
+    documents: list[list[tuple[str, float]]] = []
+    for row in frame.itertuples(index=False):
+        units: list[tuple[str, float]] = []
+        for field in fields:
+            if field == "abstract":
+                values = list(row.abstract_segments)
+            elif field == "fulltext":
+                values = list(row.fulltext_documents)
+            else:
+                value = str(row.keywords or "").strip()
+                values = [value] if value else []
+            if not values:
+                continue
+            unit_weight = active_weights[field] / len(values)
+            units.extend(
+                (f"{field.upper()}: {preprocess_transformer(value)}", unit_weight)
+                for value in values
+            )
+        weight_total = sum(weight for _, weight in units) or 1.0
+        documents.append([(text, weight / weight_total) for text, weight in units])
+    return documents
 
 
 def _default_threshold(score_kind: str) -> float:
@@ -427,6 +669,19 @@ def run_pipeline(config: dict[str, Any]) -> Path:
         before_fulltext,
         len(dataset),
     )
+    dataset["content_group"] = dataset["fulltext"].map(
+        lambda value: hashlib.sha256(
+            normalize_unicode_spaces(value).casefold().encode("utf-8")
+        ).hexdigest()
+    )
+    duplicate_groups = (
+        dataset.groupby("content_group")
+        .agg(N_handles=("handle", "size"), handles=("handle", lambda values: "||".join(map(str, values))))
+        .reset_index()
+    )
+    duplicate_groups[duplicate_groups["N_handles"].gt(1)].to_csv(
+        run_dir / "exact_content_duplicate_groups.csv", index=False
+    )
     execution_stage = str(config["experiment"].get("stage", "all")).lower()
     allowed_stages = {"prepare", "sparse", "sbert", "labse", "finalize", "all"}
     if execution_stage not in allowed_stages:
@@ -464,12 +719,28 @@ def run_pipeline(config: dict[str, Any]) -> Path:
 
     stage = time.perf_counter()
     dataset = add_language_columns(dataset, config)
+    dataset, abstract_language_segments, ground_truth_conflicts = attach_abstract_language_ground_truth(
+        dataset, config
+    )
     logger.info(
         "Language identification complete: abstract=%s fulltext=%s",
         dataset["abstract_detected_language"].value_counts().to_dict(),
         dataset["fulltext_detected_language"].value_counts().to_dict(),
     )
     timings.append({"stage": "language_detection", "seconds": time.perf_counter() - stage})
+    if not abstract_language_segments.empty:
+        from .language_ground_truth import language_ground_truth_reports
+
+        abstract_language_segments.to_csv(
+            run_dir / "abstract_language_segment_audit.csv", index=False
+        )
+        reports = language_ground_truth_reports(abstract_language_segments)
+        reports["summary"].to_csv(run_dir / "abstract_language_ground_truth_summary.csv", index=False)
+        reports["per_language"].to_csv(run_dir / "abstract_language_ground_truth_per_language.csv", index=False)
+        reports["confusion"].to_csv(run_dir / "abstract_language_ground_truth_confusion.csv", index=False)
+        ground_truth_conflicts.to_csv(
+            run_dir / "abstract_language_ground_truth_conflicts.csv", index=False
+        )
     for field in ("abstract", "fulltext", "keywords"):
         language_distribution(dataset[f"{field}_detected_language"]).to_csv(
             run_dir / f"{field}_language_distribution.csv", index=False
@@ -488,6 +759,11 @@ def run_pipeline(config: dict[str, Any]) -> Path:
             agreement_rows.append(
                 {
                     "field": field,
+                    "declaration_source": (
+                        "metadata_field_suffix"
+                        if field == "abstract"
+                        else "dc.language_or_legacy_value"
+                    ),
                     "declared_language": declared,
                     "detected_language": detected,
                     "N": count,
@@ -519,6 +795,25 @@ def run_pipeline(config: dict[str, Any]) -> Path:
     )
     language_subject = dataset.explode("labels").groupby(["abstract_detected_language", "labels"]).size().reset_index(name="N")
     language_subject.to_csv(run_dir / "language_by_subject.csv", index=False)
+    pd.DataFrame(
+        [
+            {
+                "N_items": len(dataset),
+                "N_abstract_segments": int(dataset["abstract_segments"].map(len).sum()),
+                "N_fulltext_files": int(dataset["fulltext_documents"].map(len).sum()),
+                "items_without_abstract": int(dataset["abstract_segments"].map(len).eq(0).sum()),
+                "items_with_multiple_abstracts": int(dataset["abstract_segments"].map(len).gt(1).sum()),
+                "items_with_multiple_fulltexts": int(dataset["fulltext_documents"].map(len).gt(1).sum()),
+                "abstract_missing_markers_removed": int(dataset["abstract_missing_markers"].sum()),
+                "multilingual_abstract_items": int(
+                    dataset["abstract_detected_language_set"].map(lambda values: len(values) > 1).sum()
+                ),
+                "multilingual_fulltext_items": int(
+                    dataset["fulltext_detected_language_set"].map(lambda values: len(values) > 1).sum()
+                ),
+            }
+        ]
+    ).to_csv(run_dir / "text_unit_statistics.csv", index=False)
 
     dataset_statistics(dataset["labels"].tolist()).to_csv(run_dir / "dataset_statistics.csv", index=False)
     label_statistics(dataset["labels"].tolist()).to_csv(run_dir / "label_statistics.csv", index=False)
@@ -535,6 +830,7 @@ def run_pipeline(config: dict[str, Any]) -> Path:
         calibration_size=float(split_config.get("calibration_size", 0.0)),
         seed=int(config["experiment"].get("seed", 42)),
         max_tries=int(split_config.get("max_tries", 40)),
+        group_column="content_group" if split_config.get("group_by_content", False) else None,
     )
     logger.info("Split sizes: %s", dataset["split"].value_counts().to_dict())
     logger.info("Labels present in every split: %d/%d", int(coverage["present_in_all_splits"].sum()), len(coverage))
@@ -542,7 +838,15 @@ def run_pipeline(config: dict[str, Any]) -> Path:
     split_export = dataset
     if not config.get("artifacts", {}).get("include_text_in_dataset_splits", True):
         split_export = dataset.drop(
-            columns=["abstract", "keywords", "fulltext"], errors="ignore"
+            columns=[
+                "abstract",
+                "abstract_segments",
+                "keywords",
+                "fulltext",
+                "fulltext_documents",
+                "fulltext_preprocessing_segments",
+            ],
+            errors="ignore",
         )
     split_export.to_csv(run_dir / "dataset_splits.csv", index=False)
     try:
@@ -708,7 +1012,9 @@ def run_pipeline(config: dict[str, Any]) -> Path:
     embedding_config = config["representations"].get("embeddings", {})
     dense_modes = embedding_config.get("modes") or [embedding_config.get("mode", "legacy_truncated")]
     for feature_set in config["features"]["sets"]:
-        texts = build_transformer_text(dataset, feature_set)
+        segmented_texts = build_transformer_segments(
+            dataset, feature_set, config.get("features", {}).get("field_weights")
+        )
         for representation in dense_representations:
             model_name = embedding_config.get(
                 f"{representation}_model",
@@ -755,15 +1061,28 @@ def run_pipeline(config: dict[str, Any]) -> Path:
                     model_name,
                 )
                 stage = time.perf_counter()
-                x_train = embedder.encode([texts[i] for i in train_idx])
-                x_calibration = embedder.encode([texts[i] for i in calibration_idx])
-                x_validation = embedder.encode([texts[i] for i in validation_idx])
-                embedding_statistics = {
-                    "feature_set": feature_set,
-                    "representation": representation_name,
-                    **embedder.last_statistics,
-                }
-                pd.DataFrame([embedding_statistics]).to_csv(
+                coverage_rows = []
+                encoded_partitions = {}
+                for split_name, indices in (
+                    ("train", train_idx),
+                    ("calibration", calibration_idx),
+                    ("validation", validation_idx),
+                ):
+                    encoded_partitions[split_name] = embedder.encode_segmented(
+                        [segmented_texts[i] for i in indices]
+                    )
+                    coverage_rows.append(
+                        {
+                            "partition": split_name,
+                            "feature_set": feature_set,
+                            "representation": representation_name,
+                            **embedder.last_statistics,
+                        }
+                    )
+                x_train = encoded_partitions["train"]
+                x_calibration = encoded_partitions["calibration"]
+                x_validation = encoded_partitions["validation"]
+                pd.DataFrame(coverage_rows).to_csv(
                     run_dir / f"embedding_coverage_{representation}_{embedding_mode}_{feature_set.replace('+', '_')}.csv",
                     index=False,
                 )
@@ -839,6 +1158,29 @@ def run_pipeline(config: dict[str, Any]) -> Path:
                             },
                         ]
                     )
+    if config.get("finetuning", {}).get("enabled", False) and execution_stage in {"all", "finalize"}:
+        from .finetuning import run_finetuning
+
+        finetuning_dir = run_finetuning(dataset, list(mlb.classes_), config, run_dir)
+        finetuning_validation = pd.read_csv(finetuning_dir / "results_validation.csv")
+        for row in finetuning_validation.to_dict("records"):
+            thresholds = np.load(finetuning_dir / str(row["model"]) / "thresholds.npy")
+            validation_rows.append(
+                {
+                    "run_id": run_id,
+                    "preprocessing": "transformer_finetuned",
+                    "feature_set": row["feature_set"],
+                    "representation": row["model"],
+                    "classifier": "transformer_head",
+                    "score_kind": "decision_function",
+                    "threshold": json.dumps(thresholds.tolist()),
+                    **{
+                        key: value
+                        for key, value in row.items()
+                        if key not in {"model", "model_name", "feature_set"}
+                    },
+                }
+            )
     validation = pd.DataFrame(validation_rows).sort_values("f1_macro", ascending=False)
     validation.to_csv(run_dir / "results_validation.csv", index=False)
     if validation.empty:
@@ -900,9 +1242,24 @@ def run_pipeline(config: dict[str, Any]) -> Path:
         best.classifier,
         best.f1_macro,
     )
-    final_train_idx = np.concatenate([train_idx, validation_idx])
-    if best.preprocessing == "transformer_minimal":
-        final_texts = build_transformer_text(dataset, best.feature_set)
+    # Keep validation isolated for model selection. A later production refit can
+    # use train+validation only after all paper metrics have been frozen.
+    final_train_idx = train_idx
+    if best.preprocessing == "transformer_finetuned":
+        from .finetuning import evaluate_finetuned_model
+
+        test_scores, test_prediction, threshold = evaluate_finetuned_model(
+            dataset,
+            list(mlb.classes_),
+            config,
+            run_dir,
+            str(best.representation),
+        )
+        score_kind = "decision_function"
+    elif best.preprocessing == "transformer_minimal":
+        final_texts = build_transformer_segments(
+            dataset, best.feature_set, config.get("features", {}).get("field_weights")
+        )
         representation, embedding_mode = str(best.representation).split(":", 1)
         model_name = embedding_config.get(
             f"{representation}_model",
@@ -924,7 +1281,7 @@ def run_pipeline(config: dict[str, Any]) -> Path:
             document_batch_size=int(embedding_config.get("document_batch_size", 32)),
             cache_dir=embedding_cache if embedding_config.get("cache", True) else None,
         )
-        x_train = vectorizer.encode([final_texts[i] for i in final_train_idx])
+        x_train = vectorizer.encode_segmented([final_texts[i] for i in final_train_idx])
         classifier = create_classifier(
             str(best.classifier),
             config["classifiers"].get(str(best.classifier), {}),
@@ -932,8 +1289,8 @@ def run_pipeline(config: dict[str, Any]) -> Path:
         )
         classifier.fit(x_train, y_all[final_train_idx])
         score_kind = str(best.score_kind)
-        x_test = vectorizer.encode([final_texts[i] for i in test_idx])
-        calibration_text = vectorizer.encode([final_texts[i] for i in calibration_idx])
+        x_test = vectorizer.encode_segmented([final_texts[i] for i in test_idx])
+        calibration_text = vectorizer.encode_segmented([final_texts[i] for i in calibration_idx])
     else:
         final_texts = build_feature_text(dataset, best.feature_set, best.preprocessing)
         params = config["representations"]
@@ -958,13 +1315,14 @@ def run_pipeline(config: dict[str, Any]) -> Path:
         score_kind = str(best.score_kind)
         x_test = vectorizer.transform([final_texts[i] for i in test_idx])
         calibration_text = vectorizer.transform([final_texts[i] for i in calibration_idx])
-    calibration_scores, _ = prediction_scores(classifier, calibration_text)
-    test_scores, _ = prediction_scores(classifier, x_test)
+    if best.preprocessing != "transformer_finetuned":
+        calibration_scores, _ = prediction_scores(classifier, calibration_text)
+        test_scores, _ = prediction_scores(classifier, x_test)
+        threshold = _calibrate_threshold(
+            config, y_all[calibration_idx], calibration_scores, score_kind
+        )
+        test_prediction = apply_thresholds(test_scores, threshold)
     threshold_mode = config.get("thresholds", {}).get("mode", "default")
-    threshold = _calibrate_threshold(
-        config, y_all[calibration_idx], calibration_scores, score_kind
-    )
-    test_prediction = apply_thresholds(test_scores, threshold)
     test_metrics = multilabel_metrics(y_all[test_idx], test_prediction, test_scores)
     logger.info(
         "Final isolated test: f1_macro=%.6f f1_micro=%.6f subset_accuracy=%.6f",
@@ -1000,6 +1358,27 @@ def run_pipeline(config: dict[str, Any]) -> Path:
             "specificity",
         ]
     ].to_csv(run_dir / "multilabel_confusion_matrices.csv", index=False)
+    substitution_counts: dict[tuple[str, str], int] = {}
+    for truth_row, prediction_row in zip(y_all[test_idx], test_prediction):
+        missed = list(mlb.classes_[np.flatnonzero((truth_row == 1) & (prediction_row == 0))])
+        extra = list(mlb.classes_[np.flatnonzero((truth_row == 0) & (prediction_row == 1))])
+        for missed_label in missed:
+            for predicted_label in extra:
+                key = (str(missed_label), str(predicted_label))
+                substitution_counts[key] = substitution_counts.get(key, 0) + 1
+    pd.DataFrame(
+        [
+            {
+                "missed_true_label": missed,
+                "extra_predicted_label": predicted,
+                "N_documents": count,
+            }
+            for (missed, predicted), count in sorted(
+                substitution_counts.items(), key=lambda item: (-item[1], item[0])
+            )
+        ],
+        columns=["missed_true_label", "extra_predicted_label", "N_documents"],
+    ).to_csv(run_dir / "label_substitution_errors.csv", index=False)
     write_figures(co_matrix, per_label, run_dir / "figures", test_metrics)
     best_configuration = best[
         ["preprocessing", "feature_set", "representation", "classifier"]
@@ -1046,11 +1425,6 @@ def run_pipeline(config: dict[str, Any]) -> Path:
         predictions.to_parquet(run_dir / "predictions_test.parquet", index=False)
     except ImportError:
         predictions.to_csv(run_dir / "predictions_test.csv", index=False)
-    if config.get("finetuning", {}).get("enabled", False):
-        # Keep the optional torch/transformers stack out of sparse-only runs.
-        from .finetuning import run_finetuning
-
-        run_finetuning(dataset, list(mlb.classes_), config, run_dir)
     total_seconds = time.perf_counter() - started
     timings.append({"stage": "total", "seconds": total_seconds})
     pd.DataFrame(timings).to_csv(run_dir / "timing.csv", index=False)

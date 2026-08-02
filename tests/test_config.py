@@ -6,6 +6,9 @@ def test_execution_scale_profiles():
     full_smoke = load_config("configs/run_full_smoke_1k_2026.yaml")
     full_20k = load_config("configs/run_full_20k_2026.yaml")
     full_20k_v2 = load_config("configs/run_full_20k_v2_2026.yaml")
+    full_20k_v3 = load_config("configs/run_full_20k_v3_2026.yaml")
+    protocol_smoke_v3 = load_config("configs/run_protocol_smoke_1k_v3_2026.yaml")
+    full_corpus_v3 = load_config("configs/run_full_corpus_v3_2026.yaml")
     full_final = load_config("configs/run_full_final_2026.yaml")
     medium = load_config("configs/run_20k_2026.yaml")
     full = load_config("configs/run_full_corpus_2026.yaml")
@@ -30,6 +33,12 @@ def test_execution_scale_profiles():
     assert full_20k_v2["thresholds"]["mode"] == "per_label_threshold"
     assert full_20k_v2["finetuning"]["enabled"] is True
     assert set(full_20k_v2["finetuning"]["models"]) == {"sbert_finetuned", "labse_finetuned"}
+    assert full_20k_v3["data"]["preserve_text_segments"] is True
+    assert full_20k_v3["data"]["max_fulltext_chars"] == 400000
+    assert full_20k_v3["features"]["field_weights"]["fulltext"] == 0.60
+    assert protocol_smoke_v3["sampling"]["target_n"] == 1000
+    assert protocol_smoke_v3["finetuning"]["epochs"] == 1
+    assert full_corpus_v3["sampling"]["target_n"] is None
     assert full_final["sampling"]["target_n"] is None
     assert full_final["labels"]["top_k"] == 37
     assert full_final["representations"]["enabled"] == [

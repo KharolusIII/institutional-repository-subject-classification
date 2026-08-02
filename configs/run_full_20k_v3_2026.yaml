@@ -1,0 +1,20 @@
+extends: run_full_20k_v2_2026.yaml
+experiment:
+  name: full_20k_v3_segmented_finetuned_2026
+data:
+  preserve_text_segments: true
+  max_fulltext_chars: 400000
+split:
+  group_by_content: true
+language:
+  abstract_ground_truth_csv: null
+  fulltext_preprocessing_segment_chars: 12000
+  multilingual_min_character_share: 0.20
+features:
+  field_weights: {abstract: 0.25, keywords: 0.15, fulltext: 0.60}
+finetuning:
+  enabled: true
+  epochs: 3
+  max_chunks_per_text_unit: 8
+  checkpoint_steps: 500
+  gradient_checkpointing: true

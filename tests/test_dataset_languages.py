@@ -7,7 +7,7 @@ def test_language_suffix_is_metadata_language_and_cell_value_is_document_languag
     metadata = pd.DataFrame(
         {
             "handle": ["10915/1", "10915/2"],
-            "dc.description.abstract[es]": ["An English abstract", "Resumen en español"],
+            "dc.description.abstract[es]": ["An English abstract||No posee", "Resumen en español||English translation"],
             "dc.language[es]": ["en", "es||pt"],
             "sedici2003.idioma[es]": [None, "es"],
             "dc.subject.materia[es]": ["Label A", "Label B"],
@@ -31,5 +31,8 @@ def test_language_suffix_is_metadata_language_and_cell_value_is_document_languag
     first = dataset.set_index("handle").loc["10915/1"]
     second = dataset.set_index("handle").loc["10915/2"]
     assert first["abstract_declared_language"] == "es"
+    assert first["abstract_segments"] == ["An English abstract"]
+    assert first["abstract_missing_markers"] == 1
     assert first["fulltext_declared_language"] == "en"
     assert second["fulltext_declared_language"] == "mul"
+    assert second["abstract_segments"] == ["Resumen en español", "English translation"]

@@ -146,6 +146,7 @@ def read_selected_fulltext(
     if cache:
         cache.mkdir(parents=True, exist_ok=True)
     texts: dict[str, list[str]] = defaultdict(list)
+    text_source_ids: dict[str, list[str]] = defaultdict(list)
     for row in selected.itertuples(index=False):
         cached_path = cache / f"{row.drive_file_id}.txt" if cache else None
         try:
@@ -167,21 +168,30 @@ def read_selected_fulltext(
             continue
         if text.strip():
             texts[str(row.handle)].append(text)
+            text_source_ids[str(row.handle)].append(str(row.drive_file_id))
+    from .ingestion import allocate_text_budget
+
     rows = []
     for handle, parts in texts.items():
-        complete_text = "\n\n".join(parts)
+        retained = allocate_text_budget(parts, max_chars)
+        source_ids = text_source_ids[handle]
+        complete_text = "\n\n".join(retained)
         rows.append(
             {
                 "handle": handle,
-                "fulltext": complete_text[:max_chars],
-                "fulltext_source_characters": len(complete_text),
-                "fulltext_truncated": len(complete_text) > max_chars,
+                "fulltext_documents": retained,
+                "fulltext_source_ids": source_ids[: len(retained)],
+                "fulltext": complete_text,
+                "fulltext_source_characters": sum(map(len, parts)),
+                "fulltext_truncated": sum(map(len, retained)) < sum(map(len, parts)),
             }
         )
     return pd.DataFrame(
         rows,
         columns=[
             "handle",
+            "fulltext_documents",
+            "fulltext_source_ids",
             "fulltext",
             "fulltext_source_characters",
             "fulltext_truncated",

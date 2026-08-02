@@ -45,6 +45,11 @@ def validate_config(config: dict[str, Any]) -> None:
     target_columns = config["data"].get("target_columns", [])
     if not target_columns:
         raise ValueError("data.target_columns must be explicit and non-empty")
+    if config.get("finetuning", {}).get("enabled", False) and calibration <= 0:
+        raise ValueError("Fine-tuning requires split.calibration_size > 0")
+    field_weights = config.get("features", {}).get("field_weights")
+    if field_weights is not None and sum(map(float, field_weights.values())) <= 0:
+        raise ValueError("features.field_weights must have a positive total")
 
 
 def save_resolved_config(config: dict[str, Any], path: str | Path) -> None:

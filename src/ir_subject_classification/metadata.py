@@ -8,6 +8,17 @@ from collections.abc import Iterable, Sequence
 
 import pandas as pd
 
+MISSING_TEXT_MARKERS = {
+    "no posee",
+    "no se posee",
+    "no posee resumen",
+    "sin resumen",
+    "sin abstract",
+    "no disponible",
+    "not available",
+    "does not have",
+}
+
 HANDLE_RE = re.compile(r"(?:/handle/|hdl\.handle\.net/)?(\d{1,6}/\d+)", re.I)
 
 
@@ -37,6 +48,36 @@ def parse_multivalue(value: object, separator: str = "||", strip_uri: bool = Fal
         if item and item not in values:
             values.append(item)
     return values
+
+
+def is_missing_text_marker(value: object) -> bool:
+    normalized = normalize_unicode_spaces(value).casefold().strip(" .:;-_")
+    return normalized in MISSING_TEXT_MARKERS
+
+
+def extract_text_segments(
+    row: pd.Series, columns: Iterable[str]
+) -> tuple[list[str], list[str], int]:
+    """Preserve DSpace value boundaries and their metadata-language suffixes."""
+    texts: list[str] = []
+    languages: list[str] = []
+    missing_markers = 0
+    seen: set[str] = set()
+    for column in columns:
+        declared = "und"
+        if column.endswith("]") and "[" in column:
+            declared = column.rsplit("[", 1)[1][:-1].lower() or "und"
+        for text in parse_multivalue(row.get(column, "")):
+            if is_missing_text_marker(text):
+                missing_markers += 1
+                continue
+            fingerprint = normalize_unicode_spaces(text).casefold()
+            if not fingerprint or fingerprint in seen:
+                continue
+            seen.add(fingerprint)
+            texts.append(text)
+            languages.append(declared)
+    return texts, languages, missing_markers
 
 
 def parse_labels(row: pd.Series, target_columns: Sequence[str]) -> list[str]:

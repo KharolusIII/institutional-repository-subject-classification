@@ -1,0 +1,7 @@
+extends: run_full_20k_v3_2026.yaml
+experiment:
+  name: protocol_smoke_1k_v3_segmented_finetuned_2026
+sampling: {target_n: 1000, buffer: 0, method: stratified}
+finetuning:
+  epochs: 1
+  checkpoint_steps: 100

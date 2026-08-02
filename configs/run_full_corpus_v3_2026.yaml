@@ -1,0 +1,5 @@
+extends: run_full_20k_v3_2026.yaml
+experiment:
+  name: full_corpus_v3_segmented_finetuned_2026
+sampling: {target_n: null, buffer: 0, method: stratified}
+

@@ -198,3 +198,34 @@ class DocumentEmbedder:
             self._save_array_atomic(cache_path, result)
         return result
 
+    def encode_segmented(
+        self, documents: list[list[tuple[str, float]]]
+    ) -> np.ndarray:
+        """Pool chunks within units, then weighted units within each handle."""
+        flattened: list[str] = []
+        layout: list[tuple[int, int, list[float]]] = []
+        for units in documents:
+            start = len(flattened)
+            valid = [(text, float(weight)) for text, weight in units if str(text).strip()]
+            flattened.extend(text for text, _ in valid)
+            layout.append((start, len(valid), [weight for _, weight in valid]))
+        vectors = self.encode(flattened)
+        unit_statistics = dict(self.last_statistics)
+        if not len(flattened):
+            return np.empty((len(documents), 0))
+        pooled = []
+        for start, count, weights in layout:
+            if not count:
+                pooled.append(np.zeros(vectors.shape[1], dtype=vectors.dtype))
+                continue
+            values = np.asarray(weights, dtype=float)
+            values = values / values.sum() if values.sum() else np.full(count, 1 / count)
+            pooled.append(np.average(vectors[start : start + count], axis=0, weights=values))
+        self.last_statistics = {
+            **unit_statistics,
+            "documents": len(documents),
+            "text_units": len(flattened),
+            "aggregation": "chunks_to_text_unit_to_handle",
+        }
+        return np.asarray(pooled)
+
