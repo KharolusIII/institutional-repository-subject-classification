@@ -118,7 +118,13 @@ The `full-20k-v2` notebook also fine-tunes multilingual SBERT and LaBSE with
 binary cross-entropy over uniformly sampled chunks from each document. It
 checkpoints every 500 training batches and after every epoch. Model selection
 uses validation, per-label thresholds use a separate calibration split, and
-only the frozen validation winner is evaluated on test.
+the global validation winner is frozen before any test result is computed.
+
+The global validation winner remains the single confirmatory result. Protocol
+v3 also pre-specifies the best-validation selection rule for each representation family
+(BoW, TF-IDF, BM25, frozen SBERT/LaBSE, and fine-tuned SBERT/LaBSE) for a
+secondary test comparison. Those results cannot replace the global winner and
+include paired bootstrap differences on the same test documents.
 
 Protocol v3 preserves every abstract value and every mapped full-text file as
 an independent text unit. Sparse preprocessing detects language per abstract
@@ -253,8 +259,8 @@ confidence intervals, and ranked test predictions.
 
 Vocabulary, IDF, and BM25 are fitted on train only. Representation,
 preprocessing, classifier, pooling, hyperparameters, and thresholds are
-selected on validation. Test is evaluated only after the configuration is
-frozen.
+selected on validation. Test is evaluated only after the global winner and
+the pre-registered secondary family representatives are frozen.
 
 ## Privacy and data distribution
 

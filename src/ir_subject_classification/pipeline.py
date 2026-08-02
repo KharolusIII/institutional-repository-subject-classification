@@ -31,7 +31,11 @@ from .metadata import (
     parse_labels,
     target_schema_report,
 )
-from .metrics import bootstrap_confidence_intervals, multilabel_metrics
+from .metrics import (
+    bootstrap_confidence_intervals,
+    multilabel_metrics,
+    paired_bootstrap_differences,
+)
 from .preprocessing import preprocess_sparse, preprocess_transformer
 from .reporting import (
     create_run_directory,
@@ -610,6 +614,17 @@ def _experiment_key(
     preprocessing: str, feature_set: str, representation: str, classifier: str
 ) -> tuple[str, str, str, str]:
     return preprocessing, feature_set, representation, classifier
+
+
+def _validation_family(row: pd.Series) -> str:
+    representation = str(row["representation"])
+    if str(row["preprocessing"]) == "transformer_finetuned":
+        return representation
+    if representation.startswith("sbert:"):
+        return "sbert_frozen"
+    if representation.startswith("labse:"):
+        return "labse_frozen"
+    return representation
 
 
 def _write_checkpoint(rows: list[dict[str, object]], path: Path) -> None:
@@ -1233,7 +1248,33 @@ def run_pipeline(config: dict[str, Any]) -> Path:
             "labse stages first."
         )
 
+    validation = validation.copy()
+    validation["evaluation_family"] = validation.apply(_validation_family, axis=1)
+    validation.to_csv(run_dir / "results_validation.csv", index=False)
     best = validation.iloc[0]
+    requested_families = config.get("evaluation", {}).get(
+        "secondary_test_families",
+        ["bow", "tfidf", "bm25", "sbert_frozen", "labse_frozen", "sbert_finetuned", "labse_finetuned"],
+    )
+    selected_entries = [
+        {
+            "selection_role": "global_confirmatory",
+            "evaluation_family": str(best.evaluation_family),
+            **best.to_dict(),
+        }
+    ]
+    for family in requested_families:
+        candidates = validation[validation["evaluation_family"].eq(family)]
+        if not candidates.empty:
+            selected_entries.append(
+                {
+                    "selection_role": "family_secondary",
+                    "evaluation_family": family,
+                    **candidates.iloc[0].to_dict(),
+                }
+            )
+    selected = pd.DataFrame(selected_entries)
+    selected.to_csv(run_dir / "selected_test_models_frozen.csv", index=False)
     logger.info(
         "Frozen best validation configuration: preprocessing=%s feature_set=%s representation=%s classifier=%s f1_macro=%.6f",
         best.preprocessing,
@@ -1245,83 +1286,77 @@ def run_pipeline(config: dict[str, Any]) -> Path:
     # Keep validation isolated for model selection. A later production refit can
     # use train+validation only after all paper metrics have been frozen.
     final_train_idx = train_idx
-    if best.preprocessing == "transformer_finetuned":
-        from .finetuning import evaluate_finetuned_model
 
-        test_scores, test_prediction, threshold = evaluate_finetuned_model(
-            dataset,
-            list(mlb.classes_),
-            config,
-            run_dir,
-            str(best.representation),
-        )
-        score_kind = "decision_function"
-    elif best.preprocessing == "transformer_minimal":
-        final_texts = build_transformer_segments(
-            dataset, best.feature_set, config.get("features", {}).get("field_weights")
-        )
-        representation, embedding_mode = str(best.representation).split(":", 1)
-        model_name = embedding_config.get(
-            f"{representation}_model",
-            "distiluse-base-multilingual-cased-v1"
-            if representation == "sbert"
-            else "sentence-transformers/LaBSE",
-        )
-        configured_embedding_cache = embedding_config.get("cache_dir")
-        embedding_cache = (
-            Path(configured_embedding_cache)
-            if configured_embedding_cache
-            else run_dir / "embedding_cache"
-        )
-        vectorizer = DocumentEmbedder(
-            model_name=model_name,
-            mode=embedding_mode,
-            overlap=int(embedding_config.get("overlap", 32)),
-            batch_size=int(embedding_config.get("batch_size", 32)),
-            document_batch_size=int(embedding_config.get("document_batch_size", 32)),
-            cache_dir=embedding_cache if embedding_config.get("cache", True) else None,
-        )
-        x_train = vectorizer.encode_segmented([final_texts[i] for i in final_train_idx])
+    def evaluate_candidate(candidate: pd.Series) -> tuple[np.ndarray, np.ndarray, float | np.ndarray]:
+        if str(candidate.preprocessing) == "transformer_finetuned":
+            from .finetuning import evaluate_finetuned_model
+
+            return evaluate_finetuned_model(
+                dataset,
+                list(mlb.classes_),
+                config,
+                run_dir,
+                str(candidate.representation),
+            )
+        if str(candidate.preprocessing) == "transformer_minimal":
+            final_texts = build_transformer_segments(
+                dataset,
+                str(candidate.feature_set),
+                config.get("features", {}).get("field_weights"),
+            )
+            representation, embedding_mode = str(candidate.representation).split(":", 1)
+            model_name = embedding_config.get(
+                f"{representation}_model",
+                "distiluse-base-multilingual-cased-v1"
+                if representation == "sbert"
+                else "sentence-transformers/LaBSE",
+            )
+            configured_embedding_cache = embedding_config.get("cache_dir")
+            embedding_cache = Path(configured_embedding_cache) if configured_embedding_cache else run_dir / "embedding_cache"
+            vectorizer = DocumentEmbedder(
+                model_name=model_name,
+                mode=embedding_mode,
+                overlap=int(embedding_config.get("overlap", 32)),
+                batch_size=int(embedding_config.get("batch_size", 32)),
+                document_batch_size=int(embedding_config.get("document_batch_size", 32)),
+                cache_dir=embedding_cache if embedding_config.get("cache", True) else None,
+            )
+            x_train = vectorizer.encode_segmented([final_texts[i] for i in final_train_idx])
+            x_calibration = vectorizer.encode_segmented([final_texts[i] for i in calibration_idx])
+            x_test = vectorizer.encode_segmented([final_texts[i] for i in test_idx])
+        else:
+            final_texts = build_feature_text(
+                dataset, str(candidate.feature_set), str(candidate.preprocessing)
+            )
+            params = config["representations"]
+            bm25 = params.get("bm25", {})
+            vectorizer = create_sparse_vectorizer(
+                str(candidate.representation),
+                max_features=params.get("max_features"),
+                min_df=params.get("min_df", 1),
+                max_df=params.get("max_df", 1.0),
+                ngram_range=params.get("ngram_range", [1, 2]),
+                lowercase=params.get("lowercase", True),
+                k1=bm25.get("k1", 1.5),
+                b=bm25.get("b", 0.75),
+            )
+            x_train = vectorizer.fit_transform([final_texts[i] for i in final_train_idx])
+            x_calibration = vectorizer.transform([final_texts[i] for i in calibration_idx])
+            x_test = vectorizer.transform([final_texts[i] for i in test_idx])
         classifier = create_classifier(
-            str(best.classifier),
-            config["classifiers"].get(str(best.classifier), {}),
+            str(candidate.classifier),
+            config["classifiers"].get(str(candidate.classifier), {}),
             int(config["experiment"].get("seed", 42)),
         )
         classifier.fit(x_train, y_all[final_train_idx])
-        score_kind = str(best.score_kind)
-        x_test = vectorizer.encode_segmented([final_texts[i] for i in test_idx])
-        calibration_text = vectorizer.encode_segmented([final_texts[i] for i in calibration_idx])
-    else:
-        final_texts = build_feature_text(dataset, best.feature_set, best.preprocessing)
-        params = config["representations"]
-        bm25 = params.get("bm25", {})
-        vectorizer = create_sparse_vectorizer(
-            str(best.representation),
-            max_features=params.get("max_features"),
-            min_df=params.get("min_df", 1),
-            max_df=params.get("max_df", 1.0),
-            ngram_range=params.get("ngram_range", [1, 2]),
-            lowercase=params.get("lowercase", True),
-            k1=bm25.get("k1", 1.5),
-            b=bm25.get("b", 0.75),
-        )
-        x_train = vectorizer.fit_transform([final_texts[i] for i in final_train_idx])
-        classifier = create_classifier(
-            str(best.classifier),
-            config["classifiers"].get(str(best.classifier), {}),
-            int(config["experiment"].get("seed", 42)),
-        )
-        classifier.fit(x_train, y_all[final_train_idx])
-        score_kind = str(best.score_kind)
-        x_test = vectorizer.transform([final_texts[i] for i in test_idx])
-        calibration_text = vectorizer.transform([final_texts[i] for i in calibration_idx])
-    if best.preprocessing != "transformer_finetuned":
-        calibration_scores, _ = prediction_scores(classifier, calibration_text)
-        test_scores, _ = prediction_scores(classifier, x_test)
-        threshold = _calibrate_threshold(
+        calibration_scores, score_kind = prediction_scores(classifier, x_calibration)
+        scores, _ = prediction_scores(classifier, x_test)
+        calibrated_threshold = _calibrate_threshold(
             config, y_all[calibration_idx], calibration_scores, score_kind
         )
-        test_prediction = apply_thresholds(test_scores, threshold)
+        return scores, apply_thresholds(scores, calibrated_threshold), calibrated_threshold
+
+    test_scores, test_prediction, threshold = evaluate_candidate(best)
     threshold_mode = config.get("thresholds", {}).get("mode", "default")
     test_metrics = multilabel_metrics(y_all[test_idx], test_prediction, test_scores)
     logger.info(
@@ -1345,6 +1380,98 @@ def run_pipeline(config: dict[str, Any]) -> Path:
         threshold,
     )
     per_label.to_csv(run_dir / "per_label_test.csv", index=False)
+    comparison_columns = ["preprocessing", "feature_set", "representation", "classifier"]
+    selected["configuration_key"] = selected[comparison_columns].astype(str).agg("|".join, axis=1)
+    selected["selection_roles"] = selected.groupby("configuration_key")["selection_role"].transform(
+        lambda values: "|".join(sorted(set(values)))
+    )
+    unique_selected = selected.drop_duplicates("configuration_key", keep="first")
+    global_key = "|".join(str(best[column]) for column in comparison_columns)
+    comparative_rows = []
+    comparative_per_label = []
+    paired_rows = []
+    comparative_predictions = []
+    for _, candidate in unique_selected.iterrows():
+        key = str(candidate["configuration_key"])
+        if key == global_key:
+            candidate_scores, candidate_prediction, candidate_threshold = (
+                test_scores,
+                test_prediction,
+                threshold,
+            )
+        else:
+            candidate_scores, candidate_prediction, candidate_threshold = evaluate_candidate(candidate)
+        candidate_metrics = multilabel_metrics(
+            y_all[test_idx], candidate_prediction, candidate_scores
+        )
+        comparative_rows.append(
+            {
+                "selection_roles": candidate["selection_roles"],
+                "evaluation_family": candidate["evaluation_family"],
+                **{column: candidate[column] for column in comparison_columns},
+                "validation_f1_macro": candidate["f1_macro"],
+                "validation_f1_micro": candidate["f1_micro"],
+                **candidate_metrics,
+            }
+        )
+        family_per_label = per_label_evaluation(
+            y_all[test_idx],
+            candidate_prediction,
+            candidate_scores,
+            list(mlb.classes_),
+            y_all[train_idx].sum(axis=0),
+            y_all[validation_idx].sum(axis=0),
+            candidate_threshold,
+        )
+        family_per_label.insert(0, "evaluation_family", candidate["evaluation_family"])
+        family_per_label.insert(1, "selection_roles", candidate["selection_roles"])
+        comparative_per_label.append(family_per_label)
+        if key != global_key:
+            for row in paired_bootstrap_differences(
+                y_all[test_idx],
+                test_prediction,
+                candidate_prediction,
+                int(config.get("metrics", {}).get("comparative_bootstrap_resamples", 1000)),
+                seed=int(config["experiment"].get("seed", 42)),
+            ):
+                paired_rows.append(
+                    {"evaluation_family": candidate["evaluation_family"], **row}
+                )
+        for position, handle in enumerate(dataset.iloc[test_idx]["handle"]):
+            comparative_predictions.append(
+                {
+                    "handle": handle,
+                    "evaluation_family": candidate["evaluation_family"],
+                    "selection_roles": candidate["selection_roles"],
+                    "true_labels": json.dumps(
+                        list(mlb.classes_[np.flatnonzero(y_all[test_idx][position])]),
+                        ensure_ascii=False,
+                    ),
+                    "predicted_labels": json.dumps(
+                        list(mlb.classes_[np.flatnonzero(candidate_prediction[position])]),
+                        ensure_ascii=False,
+                    ),
+                    "scores": json.dumps(candidate_scores[position].tolist()),
+                }
+            )
+    pd.DataFrame(comparative_rows).sort_values(
+        "f1_macro", ascending=False
+    ).to_csv(run_dir / "results_test_comparative.csv", index=False)
+    pd.concat(comparative_per_label, ignore_index=True).to_csv(
+        run_dir / "per_label_test_comparative.csv", index=False
+    )
+    pd.DataFrame(paired_rows).to_csv(
+        run_dir / "paired_bootstrap_vs_global.csv", index=False
+    )
+    comparative_predictions_frame = pd.DataFrame(comparative_predictions)
+    try:
+        comparative_predictions_frame.to_parquet(
+            run_dir / "predictions_test_comparative.parquet", index=False
+        )
+    except ImportError:
+        comparative_predictions_frame.to_csv(
+            run_dir / "predictions_test_comparative.csv", index=False
+        )
     per_label.sort_values(["f1", "support_test"], ascending=[False, False]).assign(
         performance_rank=lambda frame: np.arange(1, len(frame) + 1)
     ).to_csv(run_dir / "subject_performance_ranking.csv", index=False)
@@ -1389,6 +1516,22 @@ def run_pipeline(config: dict[str, Any]) -> Path:
         test_metrics,
         per_label,
     )
+    comparative_table = pd.DataFrame(comparative_rows).sort_values(
+        "f1_macro", ascending=False
+    )
+    report_lines = [
+        "\n## Pre-specified secondary representation-family comparison\n",
+        "These test results are secondary analyses. The global confirmatory winner was frozen from validation before any test metric was computed and is not replaced by this ranking.\n",
+        "| Role | Family | Representation | Classifier | Validation Macro F1 | Test Macro F1 | Test Micro F1 |\n",
+        "|---|---|---|---|---:|---:|---:|\n",
+    ]
+    for row in comparative_table.itertuples(index=False):
+        report_lines.append(
+            f"| {row.selection_roles} | {row.evaluation_family} | {row.representation} | "
+            f"{row.classifier} | {row.validation_f1_macro:.4f} | {row.f1_macro:.4f} | {row.f1_micro:.4f} |\n"
+        )
+    with (run_dir / "evaluation_report.md").open("a", encoding="utf-8") as stream:
+        stream.writelines(report_lines)
     language_performance_rows = []
     for field in ("abstract", "fulltext"):
         frame = language_performance(

@@ -36,6 +36,10 @@ def test_execution_scale_profiles():
     assert full_20k_v3["data"]["preserve_text_segments"] is True
     assert full_20k_v3["data"]["max_fulltext_chars"] == 400000
     assert full_20k_v3["features"]["field_weights"]["fulltext"] == 0.60
+    assert full_20k_v3["evaluation"]["secondary_test_families"] == [
+        "bow", "tfidf", "bm25", "sbert_frozen", "labse_frozen",
+        "sbert_finetuned", "labse_finetuned",
+    ]
     assert protocol_smoke_v3["sampling"]["target_n"] == 1000
     assert protocol_smoke_v3["finetuning"]["epochs"] == 1
     assert full_corpus_v3["sampling"]["target_n"] is None

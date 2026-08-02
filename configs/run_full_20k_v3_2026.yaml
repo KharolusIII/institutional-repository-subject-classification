@@ -18,3 +18,14 @@ finetuning:
   max_chunks_per_text_unit: 8
   checkpoint_steps: 500
   gradient_checkpointing: true
+evaluation:
+  secondary_test_families:
+    - bow
+    - tfidf
+    - bm25
+    - sbert_frozen
+    - labse_frozen
+    - sbert_finetuned
+    - labse_finetuned
+metrics:
+  comparative_bootstrap_resamples: 1000

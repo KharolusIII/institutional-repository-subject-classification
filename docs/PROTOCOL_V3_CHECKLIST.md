@@ -16,7 +16,8 @@ This checklist converts the limitations observed in the completed 20k run
 | Dense coverage described only the last call | Coverage is reported separately for train, calibration, and validation | `embedding_coverage_*.csv` |
 | SBERT and LaBSE were frozen | Both encoders receive supervised multi-label fine-tuning with BCE loss | `finetuning/results_validation.csv` |
 | Fine-tuning could be lost after a Colab interruption | Checkpoints are written every configured batch interval and every epoch | `finetuning/*/checkpoint.pt` |
-| A post-hoc transformer test would reuse test | All classical, frozen, and fine-tuned candidates compete on validation; only the global winner is evaluated on test | `results_validation.csv`, `results_test.csv` |
+| A post-hoc transformer test could alter the winner | All candidates compete on validation; the global winner is frozen as the sole confirmatory result before any test metric is computed | `results_validation.csv`, `results_test.csv` |
+| A single test result would not compare representation families | The best BoW, TF-IDF, BM25, frozen SBERT/LaBSE, and fine-tuned SBERT/LaBSE are selected by a pre-specified validation-only rule; they receive secondary test evaluation without changing the global winner | `selected_test_models_frozen.csv`, `results_test_comparative.csv`, `paired_bootstrap_vs_global.csv` |
 | Items with more files/chunks could dominate training | Unit/chunk weights sum to one per handle | fine-tuning configuration and tests |
 | Legacy caches silently mixed protocols | v3 uses dedicated segmented full-text, prepared-dataset, and embedding cache namespaces | notebook configuration |
 | Label overlap was difficult to interpret | Per-label confusion counts, co-occurrence, rankings, bootstrap intervals, and English figures/reports remain mandatory | final run artifacts |

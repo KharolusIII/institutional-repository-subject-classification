@@ -80,3 +80,41 @@ def bootstrap_confidence_intervals(
         for metric, samples in values.items()
     ]
 
+
+def paired_bootstrap_differences(
+    y_true: np.ndarray,
+    reference_prediction: np.ndarray,
+    candidate_prediction: np.ndarray,
+    n_resamples: int = 1000,
+    confidence: float = 0.95,
+    seed: int = 42,
+) -> list[dict[str, float | str]]:
+    """Paired uncertainty for candidate-minus-reference F1 on the same items."""
+    generator = np.random.default_rng(seed)
+    alpha = (1 - confidence) / 2
+    rows = []
+    for average in ("macro", "micro"):
+        observed = float(
+            f1_score(y_true, candidate_prediction, average=average, zero_division=0)
+            - f1_score(y_true, reference_prediction, average=average, zero_division=0)
+        )
+        samples = []
+        for _ in range(n_resamples):
+            index = generator.integers(0, len(y_true), len(y_true))
+            samples.append(
+                f1_score(y_true[index], candidate_prediction[index], average=average, zero_division=0)
+                - f1_score(y_true[index], reference_prediction[index], average=average, zero_division=0)
+            )
+        rows.append(
+            {
+                "metric": f"f1_{average}",
+                "difference_candidate_minus_global": observed,
+                "ci_lower": float(np.quantile(samples, alpha)),
+                "ci_upper": float(np.quantile(samples, 1 - alpha)),
+                "probability_candidate_better": float(np.mean(np.asarray(samples) > 0)),
+                "confidence": confidence,
+                "n_resamples": n_resamples,
+            }
+        )
+    return rows
+

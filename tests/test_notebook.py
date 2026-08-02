@@ -29,6 +29,8 @@ def test_colab_uses_repo_specific_secret_without_tokenized_remote():
     assert "'full-v3': 'configs/run_full_corpus_v3_2026.yaml'" in source
     assert "'full-20k-v2': 'configs/run_full_20k_v2_2026.yaml'" in source
     assert "RUN_FINE_TUNING = True" in source
+    assert "results_test_comparative.csv" in source
+    assert "paired_bootstrap_vs_global.csv" in source
     assert "FINETUNING_DIR = Path(RUN_DIR) / 'finetuning'" in source
     assert "dataset_prepared_langid_v2.parquet" in source
     assert "dataset_prepared_segmented_v3.parquet" in source

@@ -1,6 +1,11 @@
 import numpy as np
 
-from ir_subject_classification.metrics import multilabel_metrics, precision_at_k, recall_at_k
+from ir_subject_classification.metrics import (
+    multilabel_metrics,
+    paired_bootstrap_differences,
+    precision_at_k,
+    recall_at_k,
+)
 
 
 def test_precision_and_recall_at_k():
@@ -11,4 +16,15 @@ def test_precision_and_recall_at_k():
     result = multilabel_metrics(y, y, scores)
     assert result["subset_accuracy"] == 1.0
     assert "precision_at_3" in result
+
+
+def test_paired_bootstrap_reports_candidate_minus_reference():
+    truth = np.asarray([[1, 0], [0, 1], [1, 0], [0, 1]])
+    reference = np.asarray([[1, 0], [0, 0], [0, 0], [0, 1]])
+    candidate = truth.copy()
+    rows = paired_bootstrap_differences(
+        truth, reference, candidate, n_resamples=50, seed=7
+    )
+    assert {row["metric"] for row in rows} == {"f1_macro", "f1_micro"}
+    assert all(row["difference_candidate_minus_global"] > 0 for row in rows)
 

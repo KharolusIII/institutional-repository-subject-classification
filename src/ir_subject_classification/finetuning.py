@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import json
 import logging
 from dataclasses import dataclass
 from pathlib import Path
@@ -346,8 +345,9 @@ def evaluate_finetuned_model(
     )
     thresholds = np.load(model_dir / "thresholds.npy")
     prediction = apply_thresholds(scores, thresholds)
-    (output / "selected_model.json").write_text(
-        json.dumps({"model": model_key}, ensure_ascii=False, indent=2), encoding="utf-8"
+    model_output = output / model_key
+    np.save(model_output / "test_scores.npy", scores)
+    (model_output / "_TEST_SUCCESS").write_text(
+        "Pre-specified family representative evaluated successfully.\n", encoding="utf-8"
     )
-    (output / "_SUCCESS").write_text("Selected fine-tuned model evaluated successfully.\n", encoding="utf-8")
     return scores, prediction, thresholds
