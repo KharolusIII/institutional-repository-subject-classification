@@ -1,10 +1,19 @@
 import numpy as np
 
 from ir_subject_classification.finetuning import (
+    _add_special_tokens,
     _encode_documents,
     aggregate_document_logits,
     aggregate_weighted_document_logits,
 )
+
+
+def test_special_tokens_fall_back_to_bert_token_ids_for_transformers_5():
+    class Tokenizer:
+        cls_token_id = 101
+        sep_token_id = 102
+
+    assert _add_special_tokens(Tokenizer(), [7, 8]) == [101, 7, 8, 102]
 
 
 def test_chunk_logits_are_averaged_per_document():

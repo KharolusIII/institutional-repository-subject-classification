@@ -23,6 +23,25 @@ def _uniform_chunks(token_ids: list[int], length: int, maximum: int) -> list[lis
     return [chunks[index] for index in np.linspace(0, len(chunks) - 1, maximum, dtype=int)]
 
 
+def _add_special_tokens(tokenizer, token_ids: list[int]) -> list[int]:
+    """Add single-sequence special tokens across Transformers tokenizer APIs."""
+    builder = getattr(tokenizer, "build_inputs_with_special_tokens", None)
+    if callable(builder):
+        return list(builder(token_ids))
+
+    # Transformers 5 removed the public builder from some slow tokenizers.
+    # The fine-tuned encoders used here are BERT-family models, whose single
+    # sequence convention is [CLS] content [SEP].
+    prefix = [int(tokenizer.cls_token_id)] if tokenizer.cls_token_id is not None else []
+    suffix = [int(tokenizer.sep_token_id)] if tokenizer.sep_token_id is not None else []
+    if not prefix and not suffix:
+        raise AttributeError(
+            f"{tokenizer.__class__.__name__} cannot add special tokens: "
+            "no builder, cls_token_id, or sep_token_id is available"
+        )
+    return [*prefix, *token_ids, *suffix]
+
+
 def aggregate_document_logits(logits: np.ndarray, document_ids: np.ndarray, count: int) -> np.ndarray:
     result = np.zeros((count, logits.shape[1]), dtype=np.float32)
     frequencies = np.zeros(count, dtype=np.int64)
@@ -74,7 +93,7 @@ def _encode_documents(
             ids = tokenizer.encode(text, add_special_tokens=False)
             chunks = _uniform_chunks(ids, content_length, max_chunks)
             for chunk in chunks:
-                input_ids.append(tokenizer.build_inputs_with_special_tokens(chunk))
+                input_ids.append(_add_special_tokens(tokenizer, chunk))
                 document_ids.append(document_id)
                 chunk_labels.append(label.astype(np.float32))
                 weights.append(float(unit_weight) / len(chunks))
