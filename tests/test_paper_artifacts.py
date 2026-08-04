@@ -30,6 +30,7 @@ def test_reviewer_package_has_complete_aggregate_evidence():
         ROOT / "SUPPLEMENTARY_MATERIAL.md",
         ROOT / "RUNS_AND_PROVENANCE.md",
         ROOT / "CACIC_2026_Supplementary_Material.docx",
+        ROOT / "CACIC_2026_Supplementary_Material.pdf",
         ROOT / "MANIFEST.sha256",
         TABLES / "final_test_metrics.csv",
         TABLES / "family_test_comparison.csv",

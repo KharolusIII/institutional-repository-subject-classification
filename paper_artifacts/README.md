@@ -19,9 +19,12 @@ reviewer-oriented narrative, [`RUNS_AND_PROVENANCE.md`](RUNS_AND_PROVENANCE.md)
 for the two-run audit trail, and the run-specific aggregate directories for the
 underlying evidence.
 
-`CACIC_2026_Supplementary_Material.docx` is the submission-ready rendering of
-the same evidence, generated reproducibly by
-`scripts/build_supplementary_docx.py`.
+`CACIC_2026_Supplementary_Material.docx` and
+`CACIC_2026_Supplementary_Material.pdf` are reviewer-ready renderings of the
+same evidence, generated reproducibly by `scripts/build_supplementary_docx.py`
+and `scripts/build_supplementary_pdf.py`. The PDF includes the principal
+tables, all 37 per-subject results, and the main diagnostic figures; the full
+233-row grid remains available as a machine-readable CSV.
 `MANIFEST.sha256` provides a checksum for every file in this reviewer package.
 
 The focused audit retained BM25 over language-aware stopword-filtered full text
