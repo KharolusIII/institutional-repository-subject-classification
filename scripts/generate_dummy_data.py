@@ -36,7 +36,7 @@ def generate(n_documents: int = 120) -> pd.DataFrame:
 
 def main() -> None:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--output", default="data/sample/dummy_metadata.csv")
+    parser.add_argument("--output", default="examples/input/dummy_metadata.csv")
     parser.add_argument("--documents", type=int, default=120)
     args = parser.parse_args()
     path = Path(args.output)

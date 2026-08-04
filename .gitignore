@@ -21,8 +21,6 @@ data/fulltext/
 *.csv.gz
 *.jsonl
 *.parquet
-!data/sample/*.csv
-!data/sample/*.parquet
 
 # Generated artifacts and caches
 outputs/*
@@ -41,4 +39,16 @@ mlruns/
 *.key
 credentials*.json
 token*.json
+
+# Local manuscript workspace and publisher templates (not public artifacts)
+docs/article_revision/
+
+# Executed notebook copies and local scratch runs
+*.executed*.ipynb
+notebooks/private/
+*_PRIVATE.ipynb
+.tmp-*/
+
+# Historical local notebooks and manuscript copies
+Pipe 2025 OR/
 

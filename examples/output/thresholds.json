@@ -1,0 +1,10 @@
+{
+  "mode": "global_threshold",
+  "labels": [
+    "Ciencias Informáticas",
+    "Educación",
+    "Historia",
+    "Química"
+  ],
+  "thresholds": 0.49999999999999994
+}

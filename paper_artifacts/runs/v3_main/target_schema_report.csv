@@ -1,0 +1,143 @@
+label,source_field,support
+Ciencias Informáticas,sedici.subject.materias,1
+Ciencias Naturales,sedici.subject.materias[],1
+Ciencias Informáticas,sedici.subject.materias[es],14837
+Humanidades,sedici.subject.materias[es],9401
+Ciencias Naturales,sedici.subject.materias[es],8255
+Educación,sedici.subject.materias[es],6978
+Letras,sedici.subject.materias[es],6899
+Sociología,sedici.subject.materias[es],5880
+Ciencias Exactas,sedici.subject.materias[es],5750
+Ciencias Jurídicas,sedici.subject.materias[es],5594
+Historia,sedici.subject.materias[es],4982
+Ciencias Agrarias,sedici.subject.materias[es],4488
+Relaciones Internacionales,sedici.subject.materias[es],4036
+Bellas Artes,sedici.subject.materias[es],3987
+Ciencias Económicas,sedici.subject.materias[es],3851
+Ingeniería,sedici.subject.materias[es],3768
+Ciencias Sociales,sedici.subject.materias[es],3718
+Comunicación,sedici.subject.materias[es],3692
+Comunicación Social,sedici.subject.materias[es],3610
+Psicología,sedici.subject.materias[es],3509
+Física,sedici.subject.materias[es],3314
+Periodismo,sedici.subject.materias[es],3164
+Arquitectura,sedici.subject.materias[es],2872
+Ciencias Veterinarias,sedici.subject.materias[es],2768
+Antropología,sedici.subject.materias[es],2752
+Química,sedici.subject.materias[es],2653
+Educación Física,sedici.subject.materias[es],2557
+Odontología,sedici.subject.materias[es],2442
+Ciencias Médicas,sedici.subject.materias[es],2195
+Farmacia,sedici.subject.materias[es],2100
+Filosofía,sedici.subject.materias[es],1997
+Ciencias de la Educación,sedici.subject.materias[es],1862
+Ciencias Astronómicas,sedici.subject.materias[es],1855
+Trabajo Social,sedici.subject.materias[es],1753
+Zoología,sedici.subject.materias[es],1498
+Biología,sedici.subject.materias[es],1457
+Astronomía,sedici.subject.materias[es],1349
+Bibliotecología,sedici.subject.materias[es],1294
+Geografía,sedici.subject.materias[es],1245
+Urbanismo,sedici.subject.materias[es],1126
+Música,sedici.subject.materias[es],1101
+Ecología,sedici.subject.materias[es],842
+Derecho,sedici.subject.materias[es],816
+Geología,sedici.subject.materias[es],809
+Informática,sedici.subject.materias[es],715
+Paleontología,sedici.subject.materias[es],702
+Política,sedici.subject.materias[es],684
+Salud,sedici.subject.materias[es],601
+Arqueología,sedici.subject.materias[es],589
+Economía,sedici.subject.materias[es],472
+Medicina,sedici.subject.materias[es],468
+Matemática,sedici.subject.materias[es],442
+Pedagogía,sedici.subject.materias[es],442
+Legislación,sedici.subject.materias[es],415
+Botánica,sedici.subject.materias[es],403
+Turismo,sedici.subject.materias[es],390
+Ingeniería Aeronáutica,sedici.subject.materias[es],386
+Diseño Industrial,sedici.subject.materias[es],359
+Bioquímica,sedici.subject.materias[es],352
+Ingeniería Química,sedici.subject.materias[es],350
+Geofísica,sedici.subject.materias[es],309
+Artes Audiovisuales,sedici.subject.materias[es],293
+Administración,sedici.subject.materias[es],262
+Derechos Humanos,sedici.subject.materias[es],262
+Ingeniería Forestal,sedici.subject.materias[es],262
+Museología,sedici.subject.materias[es],253
+Comunicación Visual,sedici.subject.materias[es],245
+Desarrollo Regional,sedici.subject.materias[es],223
+Electrotecnia,sedici.subject.materias[es],214
+Artes Plásticas,sedici.subject.materias[es],185
+Ingeniería Electrónica,sedici.subject.materias[es],154
+Ingeniería Mecánica,sedici.subject.materias[es],153
+Multimedia,sedici.subject.materias[es],142
+Historia del Arte,sedici.subject.materias[es],135
+Ingeniería Hidráulica,sedici.subject.materias[es],127
+Veterinaria,sedici.subject.materias[es],126
+Ingeniería Industrial,sedici.subject.materias[es],114
+Software,sedici.subject.materias[es],93
+Medios de Comunicación,sedici.subject.materias[es],72
+Sociología Jurídica,sedici.subject.materias[es],64
+Ingeniería Civil,sedici.subject.materias[es],63
+Redes y Seguridad,sedici.subject.materias[es],62
+Ingeniería Agronómica,sedici.subject.materias[es],61
+Agrimensura,sedici.subject.materias[es],54
+Ingeniería en Materiales,sedici.subject.materias[es],50
+Psiquiatría,sedici.subject.materias[es],50
+Teología,sedici.subject.materias[es],36
+Contabilidad,sedici.subject.materias[es],34
+Sistemas,sedici.subject.materias[es],32
+Diseño,sedici.subject.materias[es],24
+Zoonosis,sedici.subject.materias[es],23
+Información,sedici.subject.materias[es],15
+Didáctica,sedici.subject.materias[es],14
+Literatura,sedici.subject.materias[es],7
+Bibliotecología y ciencia de la información,sedici.subject.materias[es],5
+Geoquímica,sedici.subject.materias[es],5
+"Ambiente, Producción del Hábitat y Derecho a la Ciudad",sedici.subject.materias[es],4
+Ciencias naturales y exactas,sedici.subject.materias[es],4
+Cooperativismo,sedici.subject.materias[es],4
+Agronomía,sedici.subject.materias[es],2
+Ciencias Juridicas,sedici.subject.materias[es],2
+Ciencias biológicas,sedici.subject.materias[es],2
+Ciencias médicas y de la salud,sedici.subject.materias[es],2
+Educación para la Inclusión,sedici.subject.materias[es],2
+Ingeniería de los materiales,sedici.subject.materias[es],2
+Ingeniería en Computación,sedici.subject.materias[es],2
+Lingüística,sedici.subject.materias[es],2
+Matemáticas,sedici.subject.materias[es],2
+Medicina básica,sedici.subject.materias[es],2
+"Producción, Economía Social y Solidaria",sedici.subject.materias[es],2
+Salud Integral y Comunitaria,sedici.subject.materias[es],2
+"Ambiente, Urbanismo y Patrimonio",sedici.subject.materias[es],1
+Bioquímica y biología molecular,sedici.subject.materias[es],1
+Ciencias Físicas,sedici.subject.materias[es],1
+Ciencias Informáticasingeniería de requisitos,sedici.subject.materias[es],1
+"Ciencias Sociales Letícia Pilger da Silva, Sueliton Oliveira Silva Filho",sedici.subject.materias[es],1
+Ciencias agrícolas,sedici.subject.materias[es],1
+Ciencias ambientales,sedici.subject.materias[es],1
+Ciencias de la educación,sedici.subject.materias[es],1
+Ciencias sociale,sedici.subject.materias[es],1
+Ciencias sociales,sedici.subject.materias[es],1
+Ciencias veterinarias,sedici.subject.materias[es],1
+Cultura,sedici.subject.materias[es],1
+"Desarrollo, Organización Social y Derechos Humanos",sedici.subject.materias[es],1
+Economía S,sedici.subject.materias[es],1
+Educació,sedici.subject.materias[es],1
+"Ingeniería eléctrica, ingeniería electrónica e ingeniería de la información",sedici.subject.materias[es],1
+Ingenierías y tecnologías,sedici.subject.materias[es],1
+Inmunología,sedici.subject.materias[es],1
+Normativas,sedici.subject.materias[es],1
+Otras ciencias biológicas,sedici.subject.materias[es],1
+Paisajismo,sedici.subject.materias[es],1
+Producción,sedici.subject.materias[es],1
+Recubrimientos y películas,sedici.subject.materias[es],1
+astro,sedici.subject.materias[es],1
+ciencias físicas,sedici.subject.materias[es],1
+fisica,sedici.subject.materias[es],1
+lente de Rose,sedici.subject.materias[es],1
+naturales,sedici.subject.materias[es],1
+psicologia,sedici.subject.materias[es],1
+veterinaria,sedici.subject.materias[es],1
+Objeto de conferencia,sedici.subject.other[es],1
