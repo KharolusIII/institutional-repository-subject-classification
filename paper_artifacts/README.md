@@ -19,6 +19,11 @@ reviewer-oriented narrative, [`RUNS_AND_PROVENANCE.md`](RUNS_AND_PROVENANCE.md)
 for the two-run audit trail, and the run-specific aggregate directories for the
 underlying evidence.
 
+The complete experiment table is directly available as
+[`runs/v3_main/results_validation_grid.csv`](runs/v3_main/results_validation_grid.csv).
+It contains all 233 validation candidates and their configuration, calibrated
+thresholds, multilabel metrics and transformer training metadata.
+
 `CACIC_2026_Supplementary_Material.docx` and
 `CACIC_2026_Supplementary_Material.pdf` are reviewer-ready renderings of the
 same evidence, generated reproducibly by `scripts/build_supplementary_docx.py`
@@ -63,10 +68,6 @@ all other labels and captions are in English.
 | Test metrics | Per-subject F1 |
 |---|---|
 | ![Test metrics](figures/test_metrics_overview.png) | ![Per-subject F1](figures/per_label_f1.png) |
-
-| Support vs. F1 | Label co-occurrence |
-|---|---|
-| ![Support versus F1](figures/support_vs_f1.png) | ![Label co-occurrence](figures/label_cooccurrence_heatmap.png) |
 
 The corrected manuscript workflow figures are:
 

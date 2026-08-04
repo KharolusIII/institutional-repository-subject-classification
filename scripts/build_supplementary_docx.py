@@ -165,7 +165,9 @@ def build(output: Path):
     ], [0.55, 4.35, 0.9, 0.9])
     document.add_paragraph(
         "Table S6 reports the 15 highest Macro-F1 configurations. The complete 233-row validation "
-        "grid is distributed as runs/v3_main/results_validation_grid.csv."
+        "grid is available at https://github.com/KharolusIII/"
+        "institutional-repository-subject-classification/blob/main/paper_artifacts/runs/v3_main/"
+        "results_validation_grid.csv."
     )
 
     family = read_rows(TABLES / "family_test_comparison.csv")

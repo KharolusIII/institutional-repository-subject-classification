@@ -111,7 +111,9 @@ def build(output: Path):
         for i, row in enumerate(grid[:20], 1)
     ], [12 * mm, 180 * mm, 28 * mm, 28 * mm])
     story.append(Paragraph(
-        "The complete 233-row grid is supplied as paper_artifacts/runs/v3_main/results_validation_grid.csv.",
+        "Complete 233-row validation table: https://github.com/KharolusIII/"
+        "institutional-repository-subject-classification/blob/main/paper_artifacts/runs/v3_main/"
+        "results_validation_grid.csv",
         styles["Normal"],
     ))
 
