@@ -50,6 +50,11 @@ The 233 primary validation candidates comprise:
   3 classifiers; and
 - 2 fine-tuned transformer candidates.
 
+**Complete table:** [download or inspect all 233 validation configurations](runs/v3_main/results_validation_grid.csv).
+This machine-readable table includes preprocessing, feature set,
+representation, classifier, calibrated thresholds, multilabel metrics and
+transformer training metadata.
+
 Macro-F1 is the primary selection metric. The highest validation Macro-F1 in
 the v3 grid is BM25/full-text/LinearSVC (`0.748348`). The highest validation
 Micro-F1 is BM25/all-fields/logistic-regression (`0.777362`, Macro-F1
@@ -109,7 +114,7 @@ the per-label figures for the complete audit.
 |---|---|
 | Corpus and split | `runs/v3_main/dataset_statistics.csv`, `text_unit_statistics.csv`, `fulltext_coverage.csv`, `label_coverage_by_split.csv` |
 | Language audit | `runs/v3_main/language_agreement_summary.csv`, `abstract_language_ground_truth_summary.csv`, language distributions |
-| Complete 233-candidate validation comparison | `runs/v3_main/results_validation_grid.csv` |
+| Complete 233-candidate validation comparison | [`runs/v3_main/results_validation_grid.csv`](runs/v3_main/results_validation_grid.csv) |
 | Fine-tuning | `tables/transformer_validation.csv`, `sbert_epoch_history.csv`, `labse_epoch_history.csv` |
 | Family results | `tables/family_test_comparison.csv` |
 | Convergence audit | `runs/convergence_audit/results_validation.csv`, `tables/classifier_convergence.csv` |

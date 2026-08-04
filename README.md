@@ -7,6 +7,19 @@ Reproducible multi-label subject classification for institutional repositories,
 developed around SEDICI (Universidad Nacional de La Plata). The system suggests
 subjects to catalogers; it does not replace professional cataloging decisions.
 
+## Reviewer quick access
+
+- [Supplementary material (PDF)](paper_artifacts/CACIC_2026_Supplementary_Material.pdf)
+- [Supplementary material (DOCX)](paper_artifacts/CACIC_2026_Supplementary_Material.docx)
+- [Complete 233-configuration validation table](paper_artifacts/runs/v3_main/results_validation_grid.csv)
+- [Final held-out metrics](paper_artifacts/tables/final_test_metrics.csv)
+- [Complete per-subject results](paper_artifacts/tables/per_label_test.csv)
+- [Runs and provenance](paper_artifacts/RUNS_AND_PROVENANCE.md)
+
+The public evidence package contains aggregate results only. Restricted texts,
+document identifiers, item-level predictions, private notebooks, credentials,
+and local paths are not distributed.
+
 ## What the pipeline does
 
 It links DSpace metadata, Assetstore IDs, handles, and full text; measures
@@ -94,9 +107,26 @@ credentials are required.
 Private notebooks, authorized corpora, item-level predictions, caches,
 checkpoints, local paths, and credentials are intentionally excluded.
 
-### Execution scale profiles
+### Final reproducibility configurations
 
-The same scientific code can be run with explicit profiles:
+These are the maintained configurations for reproducing or extending the final
+2026 protocol:
+
+| Profile | Configuration | Intended use |
+|---|---|---|
+| Synthetic smoke | `configs/dummy.yaml` | Fast public end-to-end check without external data |
+| Protocol smoke v3 | `configs/run_protocol_smoke_1k_v3_2026.yaml` | Segmentation, calibration and fine-tuning acceptance test on approximately 1,000 items |
+| Paper experiment v3 | `configs/run_full_20k_v3_2026.yaml` | Frozen 20k paper cohort; 233 validation candidates and family-level tests |
+| Convergence audit | `configs/run_convergence_audit_20k_2026.yaml` | Eight controlled BM25/TF-IDF LinearSVC fits and confirmatory held-out test |
+| Full-corpus v3 | `configs/run_full_corpus_v3_2026.yaml` | Final segmented and calibrated protocol over every eligible item |
+
+The paper results come from **Paper experiment v3**, followed by the
+**Convergence audit** using the same frozen cohort and split fingerprint.
+
+### Historical and scale-control profiles
+
+The following profiles remain available for continuity, timing studies and
+earlier ablations. Their results must not be mixed with the final v3 protocol.
 
 | Profile | Configuration | Intended use |
 |---|---|---|
@@ -105,9 +135,6 @@ The same scientific code can be run with explicit profiles:
 | `20k` | `configs/run_20k_2026.yaml` | Historical-scale comparison and E0/E1 continuity |
 | `full-20k` | `configs/run_full_20k_2026.yaml` | All 231 sparse and dense combinations on a stratified 20,000-item sample |
 | `full-20k-v2` | `configs/run_full_20k_v2_2026.yaml` | Calibrated 20k protocol plus resumable supervised SBERT/LaBSE fine-tuning |
-| `protocol-smoke-v3` | `configs/run_protocol_smoke_1k_v3_2026.yaml` | End-to-end segmented 1k acceptance run, including fine-tuning |
-| `full-20k-v3` | `configs/run_full_20k_v3_2026.yaml` | Paper protocol: segmented multilingual units, calibrated comparison, and fine-tuning |
-| `full-v3` | `configs/run_full_corpus_v3_2026.yaml` | Same paper protocol over every eligible item |
 | `full-final` | `configs/run_full_final_2026.yaml` | All 231 sparse and dense combinations on every eligible item and 37 labels |
 | `full` | `configs/run_full_corpus_2026.yaml` | Every eligible item; resumable sparse plus dense execution |
 
@@ -306,6 +333,12 @@ results, language agreement, transformer epoch histories, convergence records,
 paired-bootstrap comparisons, and publication-ready figures. These are
 aggregate outputs only. Item-level predictions, handles, texts, manifests,
 caches, and model weights are deliberately excluded.
+
+The [complete validation grid](paper_artifacts/runs/v3_main/results_validation_grid.csv)
+contains all 233 candidates with preprocessing, fields, representation,
+classifier, calibrated thresholds, multilabel metrics and transformer training
+metadata. It is the machine-readable scientific export of the resumable
+validation checkpoint.
 
 ## Privacy and data distribution
 

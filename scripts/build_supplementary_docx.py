@@ -64,6 +64,14 @@ def metric(row, key, digits=4):
     return f"{float(row[key]):.{digits}f}"
 
 
+def configuration_name(row):
+    return " / ".join(
+        str(row.get(key, ""))
+        for key in ("representation", "feature_set", "preprocessing", "classifier")
+        if row.get(key, "")
+    )
+
+
 def build(output: Path):
     document = Document()
     section = document.sections[0]
@@ -149,6 +157,19 @@ def build(output: Path):
         for row in leaders
     ], [1.1, 3.4, 1.0, 1.0])
 
+    validation_grid = read_rows(V3 / "results_validation_grid.csv")
+    validation_grid.sort(key=lambda row: float(row["f1_macro"]), reverse=True)
+    add_table(document, ["Rank", "Validation configuration", "Macro-F1", "Micro-F1"], [
+        [str(index), configuration_name(row), metric(row, "f1_macro"), metric(row, "f1_micro")]
+        for index, row in enumerate(validation_grid[:15], start=1)
+    ], [0.55, 4.35, 0.9, 0.9])
+    document.add_paragraph(
+        "Table S6 reports the 15 highest Macro-F1 configurations. The complete 233-row validation "
+        "grid is available at https://github.com/KharolusIII/"
+        "institutional-repository-subject-classification/blob/main/paper_artifacts/runs/v3_main/"
+        "results_validation_grid.csv."
+    )
+
     family = read_rows(TABLES / "family_test_comparison.csv")
     add_table(document, ["Family", "Selected source", "Val. Macro-F1", "Test Macro-F1", "Test Micro-F1"], [
         [row["evaluation_family"], row["feature_set"],
@@ -157,6 +178,12 @@ def build(output: Path):
     ], [1.25, 1.65, 1.2, 1.2, 1.2])
 
     document.add_heading("S6. Convergence audit and final held-out metrics", level=1)
+    convergence = read_rows(AUDIT / "results_validation.csv")
+    convergence.sort(key=lambda row: float(row["f1_macro"]), reverse=True)
+    add_table(document, ["Configuration", "Macro-F1", "Micro-F1"], [
+        [configuration_name(row), metric(row, "f1_macro"), metric(row, "f1_micro")]
+        for row in convergence
+    ], [4.7, 1.0, 1.0])
     final = read_rows(TABLES / "final_test_metrics.csv")[0]
     intervals = {row["metric"]: row for row in read_rows(AUDIT / "bootstrap_ci.csv")}
     add_table(document, ["Metric", "Estimate", "95% CI where applicable"], [
@@ -176,6 +203,15 @@ def build(output: Path):
     add_picture(document, ROOT / "figures" / "test_metrics_overview.png",
                 "Figure S3. Final held-out metric overview.", width=6.2)
 
+    paired = read_rows(TABLES / "paired_bootstrap_updated.csv")
+    add_table(document, ["Comparison", "Metric", "Difference", "95% CI", "P(candidate > BM25)"], [
+        [f'{row["evaluation_family"]} minus final BM25', row["metric"],
+         f'{float(row["difference_candidate_minus_final_bm25"]):.4f}',
+         f'[{float(row["ci_lower"]):.4f}, {float(row["ci_upper"]):.4f}]',
+         f'{float(row["probability_candidate_better"]):.4f}']
+        for row in paired
+    ], [2.3, 0.9, 1.1, 1.6, 0.7])
+
     document.add_heading("S7. Fine-tuning trajectories", level=1)
     transformer = read_rows(TABLES / "transformer_validation.csv")
     add_table(document, ["Model", "Selected epoch", "Val. Macro-F1", "Val. Micro-F1"], [
@@ -193,7 +229,19 @@ def build(output: Path):
     add_picture(document, ROOT / "figures" / "per_label_f1.png",
                 "Figure S4. Final held-out F1 by subject.", width=6.7)
 
-    document.add_heading("S9. Artifact index and reproduction", level=1)
+    document.add_heading("S9. Diagnostic figures", level=1)
+    add_picture(document, ROOT / "figures" / "per_label_confusion_matrices.png",
+                "Figure S5. One-vs-rest confusion matrices for all 37 subjects.", width=6.7)
+    add_picture(document, ROOT / "figures" / "true_vs_predicted_support.png",
+                "Figure S6. True versus predicted support by subject.", width=6.7)
+    add_picture(document, ROOT / "figures" / "label_error_counts.png",
+                "Figure S7. False-positive and false-negative counts by subject.", width=6.7)
+    add_picture(document, ROOT / "figures" / "support_vs_f1.png",
+                "Figure S8. Relationship between test support and subject-level F1.", width=6.2)
+    add_picture(document, ROOT / "figures" / "label_cooccurrence_heatmap.png",
+                "Figure S9. Label co-occurrence structure in the evaluation cohort.", width=6.7)
+
+    document.add_heading("S10. Artifact index and reproduction", level=1)
     document.add_paragraph(
         "The GitHub paper_artifacts directory includes the complete 233-row validation export, "
         "eight-row convergence audit, per-label convergence diagnostics, calibrated thresholds, "

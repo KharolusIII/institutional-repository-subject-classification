@@ -19,9 +19,17 @@ reviewer-oriented narrative, [`RUNS_AND_PROVENANCE.md`](RUNS_AND_PROVENANCE.md)
 for the two-run audit trail, and the run-specific aggregate directories for the
 underlying evidence.
 
-`CACIC_2026_Supplementary_Material.docx` is the submission-ready rendering of
-the same evidence, generated reproducibly by
-`scripts/build_supplementary_docx.py`.
+The complete experiment table is directly available as
+[`runs/v3_main/results_validation_grid.csv`](runs/v3_main/results_validation_grid.csv).
+It contains all 233 validation candidates and their configuration, calibrated
+thresholds, multilabel metrics and transformer training metadata.
+
+`CACIC_2026_Supplementary_Material.docx` and
+`CACIC_2026_Supplementary_Material.pdf` are reviewer-ready renderings of the
+same evidence, generated reproducibly by `scripts/build_supplementary_docx.py`
+and `scripts/build_supplementary_pdf.py`. The PDF includes the principal
+tables, all 37 per-subject results, and the main diagnostic figures; the full
+233-row grid remains available as a machine-readable CSV.
 `MANIFEST.sha256` provides a checksum for every file in this reviewer package.
 
 The focused audit retained BM25 over language-aware stopword-filtered full text
@@ -60,10 +68,6 @@ all other labels and captions are in English.
 | Test metrics | Per-subject F1 |
 |---|---|
 | ![Test metrics](figures/test_metrics_overview.png) | ![Per-subject F1](figures/per_label_f1.png) |
-
-| Support vs. F1 | Label co-occurrence |
-|---|---|
-| ![Support versus F1](figures/support_vs_f1.png) | ![Label co-occurrence](figures/label_cooccurrence_heatmap.png) |
 
 The corrected manuscript workflow figures are:
 
