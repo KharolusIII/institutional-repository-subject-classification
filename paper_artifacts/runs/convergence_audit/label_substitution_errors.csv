@@ -1,0 +1,241 @@
+missed_true_label,extra_predicted_label,N_documents
+Comunicación Social,Comunicación,14
+Ciencias Sociales,Historia,10
+Astronomía,Ciencias Astronómicas,9
+Ciencias Exactas,Biología,8
+Ciencias Informáticas,Educación,7
+Ciencias Sociales,Sociología,7
+Comunicación,Sociología,7
+Periodismo,Sociología,7
+Biología,Ciencias Naturales,6
+Ciencias Exactas,Ingeniería,6
+Ciencias de la Educación,Educación,6
+Comunicación,Comunicación Social,6
+Filosofía,Letras,6
+Ciencias Exactas,Ciencias Médicas,5
+Ciencias Informáticas,Bellas Artes,5
+Ciencias Naturales,Ciencias Agrarias,5
+Geografía,Urbanismo,5
+Sociología,Humanidades,5
+Zoología,Ciencias Naturales,5
+Arquitectura,Urbanismo,4
+Ciencias Económicas,Sociología,4
+Ciencias Exactas,Química,4
+Ciencias Sociales,Educación,4
+Comunicación,Letras,4
+Educación,Ciencias de la Educación,4
+Letras,Humanidades,4
+Periodismo,Bellas Artes,4
+Sociología,Ciencias Jurídicas,4
+Ciencias Agrarias,Ciencias Naturales,3
+Ciencias Exactas,Ciencias Astronómicas,3
+Ciencias Exactas,Ciencias Naturales,3
+Ciencias Exactas,Educación,3
+Ciencias Exactas,Física,3
+Ciencias Sociales,Bellas Artes,3
+Ciencias Sociales,Comunicación,3
+Ciencias Sociales,Humanidades,3
+Ciencias Sociales,Relaciones Internacionales,3
+Ciencias de la Educación,Humanidades,3
+Comunicación Social,Letras,3
+Comunicación Social,Periodismo,3
+Educación,Letras,3
+Filosofía,Humanidades,3
+Historia,Humanidades,3
+Humanidades,Educación,3
+Humanidades,Letras,3
+Ingeniería,Ciencias Informáticas,3
+Letras,Historia,3
+Sociología,Historia,3
+Trabajo Social,Ciencias Sociales,3
+Trabajo Social,Educación,3
+Antropología,Ciencias Naturales,2
+Antropología,Ciencias Sociales,2
+Arquitectura,Bellas Artes,2
+Arquitectura,Ciencias Naturales,2
+Arquitectura,Educación,2
+Astronomía,Física,2
+Bellas Artes,Humanidades,2
+Biología,Humanidades,2
+Biología,Zoología,2
+Ciencias Económicas,Educación,2
+Ciencias Informáticas,Humanidades,2
+Ciencias Médicas,Biología,2
+Ciencias Naturales,Antropología,2
+Ciencias Naturales,Biología,2
+Ciencias Sociales,Ciencias Agrarias,2
+Ciencias Sociales,Ciencias Jurídicas,2
+Ciencias Sociales,Letras,2
+Ciencias Sociales,Periodismo,2
+Ciencias de la Educación,Ciencias Informáticas,2
+Ciencias de la Educación,Historia,2
+Ciencias de la Educación,Letras,2
+Ciencias de la Educación,Sociología,2
+Comunicación,Bellas Artes,2
+Comunicación,Humanidades,2
+Comunicación,Periodismo,2
+Comunicación Social,Educación,2
+Educación,Bellas Artes,2
+Educación,Comunicación,2
+Física,Ciencias Médicas,2
+Física,Ingeniería,2
+Geografía,Relaciones Internacionales,2
+Historia,Ciencias Jurídicas,2
+Humanidades,Ciencias Agrarias,2
+Humanidades,Ciencias Informáticas,2
+Humanidades,Ciencias Naturales,2
+Humanidades,Urbanismo,2
+Periodismo,Ciencias Jurídicas,2
+Periodismo,Comunicación,2
+Periodismo,Humanidades,2
+Periodismo,Letras,2
+Psicología,Humanidades,2
+Sociología,Bellas Artes,2
+Sociología,Comunicación Social,2
+Sociología,Educación,2
+Sociología,Periodismo,2
+Sociología,Relaciones Internacionales,2
+Trabajo Social,Humanidades,2
+Urbanismo,Educación,2
+Antropología,Psicología,1
+Antropología,Sociología,1
+Antropología,Trabajo Social,1
+Arquitectura,Ciencias Económicas,1
+Arquitectura,Historia,1
+Arquitectura,Humanidades,1
+Arquitectura,Relaciones Internacionales,1
+Astronomía,Humanidades,1
+Bellas Artes,Comunicación Social,1
+Bibliotecología,Ciencias Agrarias,1
+Bibliotecología,Ciencias Astronómicas,1
+Bibliotecología,Ciencias Informáticas,1
+Bibliotecología,Ciencias Naturales,1
+Bibliotecología,Humanidades,1
+Biología,Ciencias Agrarias,1
+Biología,Ciencias Veterinarias,1
+Biología,Ciencias de la Educación,1
+Biología,Odontología,1
+Biología,Química,1
+Ciencias Agrarias,Biología,1
+Ciencias Agrarias,Ciencias Astronómicas,1
+Ciencias Astronómicas,Ingeniería,1
+Ciencias Económicas,Bibliotecología,1
+Ciencias Económicas,Ciencias Sociales,1
+Ciencias Económicas,Humanidades,1
+Ciencias Económicas,Periodismo,1
+Ciencias Exactas,Arquitectura,1
+Ciencias Exactas,Ciencias Informáticas,1
+Ciencias Exactas,Ciencias Veterinarias,1
+Ciencias Exactas,Ciencias de la Educación,1
+Ciencias Exactas,Humanidades,1
+Ciencias Informáticas,Ciencias Jurídicas,1
+Ciencias Informáticas,Ingeniería,1
+Ciencias Jurídicas,Antropología,1
+Ciencias Jurídicas,Ciencias Informáticas,1
+Ciencias Jurídicas,Ciencias Sociales,1
+Ciencias Jurídicas,Comunicación,1
+Ciencias Jurídicas,Humanidades,1
+Ciencias Jurídicas,Periodismo,1
+Ciencias Jurídicas,Psicología,1
+Ciencias Jurídicas,Trabajo Social,1
+Ciencias Médicas,Antropología,1
+Ciencias Médicas,Ciencias Exactas,1
+Ciencias Médicas,Educación,1
+Ciencias Naturales,Ciencias Sociales,1
+Ciencias Naturales,Ciencias Veterinarias,1
+Ciencias Naturales,Ciencias de la Educación,1
+Ciencias Naturales,Educación,1
+Ciencias Naturales,Humanidades,1
+Ciencias Naturales,Letras,1
+Ciencias Naturales,Psicología,1
+Ciencias Naturales,Urbanismo,1
+Ciencias Sociales,Antropología,1
+Ciencias Sociales,Arquitectura,1
+Ciencias Sociales,Ciencias de la Educación,1
+Ciencias Sociales,Comunicación Social,1
+Ciencias Sociales,Psicología,1
+Ciencias Sociales,Urbanismo,1
+Ciencias Veterinarias,Biología,1
+Ciencias Veterinarias,Ciencias Exactas,1
+Ciencias Veterinarias,Ciencias Médicas,1
+Ciencias de la Educación,Bellas Artes,1
+Ciencias de la Educación,Ciencias Agrarias,1
+Ciencias de la Educación,Educación Física,1
+Comunicación,Bibliotecología,1
+Comunicación,Ciencias Naturales,1
+Comunicación,Educación,1
+Comunicación Social,Bellas Artes,1
+Comunicación Social,Ciencias Informáticas,1
+Comunicación Social,Ciencias Jurídicas,1
+Comunicación Social,Humanidades,1
+Comunicación Social,Sociología,1
+Comunicación Social,Trabajo Social,1
+Educación,Bibliotecología,1
+Educación,Ciencias Naturales,1
+Educación,Ciencias Sociales,1
+Educación,Ciencias Veterinarias,1
+Educación,Comunicación Social,1
+Educación,Física,1
+Educación,Humanidades,1
+Educación,Psicología,1
+Educación Física,Ciencias Médicas,1
+Educación Física,Humanidades,1
+Educación Física,Sociología,1
+Filosofía,Bellas Artes,1
+Filosofía,Ciencias Astronómicas,1
+Filosofía,Ciencias Sociales,1
+Filosofía,Historia,1
+Física,Ciencias Astronómicas,1
+Física,Ciencias Exactas,1
+Física,Educación,1
+Física,Química,1
+Geografía,Antropología,1
+Geografía,Ciencias Agrarias,1
+Geografía,Ciencias Económicas,1
+Geografía,Ciencias Jurídicas,1
+Geografía,Educación,1
+Historia,Ciencias Sociales,1
+Historia,Educación,1
+Historia,Relaciones Internacionales,1
+Historia,Sociología,1
+Historia,Urbanismo,1
+Humanidades,Ciencias Médicas,1
+Humanidades,Ciencias Sociales,1
+Humanidades,Ciencias de la Educación,1
+Humanidades,Historia,1
+Humanidades,Periodismo,1
+Ingeniería,Ciencias Naturales,1
+Ingeniería,Urbanismo,1
+Letras,Antropología,1
+Letras,Ciencias Naturales,1
+Letras,Comunicación Social,1
+Letras,Filosofía,1
+Letras,Sociología,1
+Odontología,Ciencias Médicas,1
+Odontología,Educación,1
+Periodismo,Relaciones Internacionales,1
+Periodismo,Trabajo Social,1
+Psicología,Ciencias Jurídicas,1
+Psicología,Comunicación,1
+Psicología,Educación,1
+Psicología,Historia,1
+Psicología,Letras,1
+Psicología,Periodismo,1
+Química,Biología,1
+Química,Ciencias Exactas,1
+Química,Educación,1
+Química,Física,1
+Química,Ingeniería,1
+Relaciones Internacionales,Historia,1
+Sociología,Ciencias Agrarias,1
+Sociología,Ciencias Sociales,1
+Trabajo Social,Arquitectura,1
+Trabajo Social,Ciencias Jurídicas,1
+Trabajo Social,Historia,1
+Trabajo Social,Psicología,1
+Trabajo Social,Sociología,1
+Urbanismo,Bellas Artes,1
+Urbanismo,Historia,1
+Zoología,Biología,1
+Zoología,Ciencias Agrarias,1
+Zoología,Ciencias Veterinarias,1

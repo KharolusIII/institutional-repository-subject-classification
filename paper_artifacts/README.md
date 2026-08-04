@@ -14,6 +14,17 @@ or model checkpoints are included.
 - Cohort: 19,710 documents, 37 labels, 24,326 assignments
 - Frozen split: 12,836 train, 1,927 calibration, 1,988 validation, 2,959 test
 
+Start with [`SUPPLEMENTARY_MATERIAL.md`](SUPPLEMENTARY_MATERIAL.md) for the
+reviewer-oriented narrative, [`RUNS_AND_PROVENANCE.md`](RUNS_AND_PROVENANCE.md)
+for the two-run audit trail, and
+[`MANUSCRIPT_AUDIT_FINAL.md`](MANUSCRIPT_AUDIT_FINAL.md) for the final
+manuscript consistency check.
+
+`CACIC_2026_Supplementary_Material.docx` is the submission-ready rendering of
+the same evidence, generated reproducibly by
+`scripts/build_supplementary_docx.py`.
+`MANIFEST.sha256` provides a checksum for every file in this reviewer package.
+
 The focused audit retained BM25 over language-aware stopword-filtered full text
 with Linear SVC (`C=0.5`, stored `tol=0.0005`). Tolerances `0.0001` and
 `0.0005` tied on the recorded validation metrics; no superiority is claimed.
@@ -36,6 +47,10 @@ All 37 one-vs-rest fits converged in the final validation and test refits.
 - `tables/paired_bootstrap_updated.csv`: exact item-level paired-bootstrap
   differences recomputed with 1,000 draws and seed 42.
 - `tables/classifier_convergence.csv`: per-label convergence audit.
+- `runs/v3_main/`: aggregate corpus, language, coverage, label, complete
+  233-candidate validation and operational timing artifacts from the main run.
+- `runs/convergence_audit/`: aggregate eight-fit audit, final metrics,
+  confidence intervals, thresholds, errors and operational timing artifacts.
 
 ### Figures
 
@@ -50,6 +65,12 @@ all other labels and captions are in English.
 | Support vs. F1 | Label co-occurrence |
 |---|---|
 | ![Support versus F1](figures/support_vs_f1.png) | ![Label co-occurrence](figures/label_cooccurrence_heatmap.png) |
+
+The corrected manuscript workflow figures are:
+
+| Dataset construction | Experimental protocol |
+|---|---|
+| ![Dataset workflow](figures/dataset_construction_workflow.png) | ![Experimental workflow](figures/experimental_protocol_workflow.png) |
 
 ## Interpretation
 

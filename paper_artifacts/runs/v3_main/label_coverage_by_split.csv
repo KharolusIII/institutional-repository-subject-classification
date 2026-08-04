@@ -1,0 +1,38 @@
+label,support_total,support_train,support_calibration,support_validation,support_test,present_in_all_splits,split_seed
+Antropología,391,254,39,39,59,True,42
+Arquitectura,511,332,51,51,77,True,42
+Astronomía,239,156,24,24,35,True,42
+Bellas Artes,706,459,71,70,106,True,42
+Bibliotecología,247,161,25,24,37,True,42
+Biología,223,145,22,22,34,True,42
+Ciencias Agrarias,776,504,78,78,116,True,42
+Ciencias Astronómicas,245,159,25,24,37,True,42
+Ciencias Económicas,564,367,56,56,85,True,42
+Ciencias Exactas,840,546,84,84,126,True,42
+Ciencias Informáticas,2578,1675,258,258,387,True,42
+Ciencias Jurídicas,1028,670,102,102,154,True,42
+Ciencias Médicas,359,233,36,36,54,True,42
+Ciencias Naturales,1238,803,125,124,186,True,42
+Ciencias Sociales,697,453,70,70,104,True,42
+Ciencias Veterinarias,481,313,48,48,72,True,42
+Ciencias de la Educación,338,220,34,34,50,True,42
+Comunicación,689,448,69,69,103,True,42
+Comunicación Social,622,405,62,62,93,True,42
+Educación,1235,803,123,124,185,True,42
+Educación Física,489,318,49,49,73,True,42
+Filosofía,349,226,35,35,53,True,42
+Física,414,269,41,42,62,True,42
+Geografía,234,152,23,24,35,True,42
+Historia,831,542,83,82,124,True,42
+Humanidades,1510,982,151,150,227,True,42
+Ingeniería,589,383,59,59,88,True,42
+Letras,1215,790,121,122,182,True,42
+Odontología,444,291,43,44,66,True,42
+Periodismo,585,381,58,58,88,True,42
+Psicología,664,432,66,66,100,True,42
+Química,414,269,41,42,62,True,42
+Relaciones Internacionales,769,501,77,76,115,True,42
+Sociología,1093,710,109,109,165,True,42
+Trabajo Social,304,198,30,30,46,True,42
+Urbanismo,200,130,20,20,30,True,42
+Zoología,215,139,21,22,33,True,42
