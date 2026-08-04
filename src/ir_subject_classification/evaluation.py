@@ -87,11 +87,15 @@ def language_performance(
         index = np.asarray(list(indices))
         if len(index) < minimum_support:
             continue
-        metrics = multilabel_metrics(y_true[index], y_pred[index], scores[index])
+        subset_true = y_true[index]
+        evaluable_labels = int(np.count_nonzero(subset_true.sum(axis=0)))
+        metrics = multilabel_metrics(subset_true, y_pred[index], scores[index])
         rows.append(
             {
                 "language": language,
                 "N": len(index),
+                "evaluable_labels": evaluable_labels,
+                "non_evaluable_labels": int(y_true.shape[1] - evaluable_labels),
                 **{key: metrics[key] for key in ("f1_micro", "f1_macro", "precision_at_3", "recall_at_3", "precision_at_5", "recall_at_5")},
             }
         )

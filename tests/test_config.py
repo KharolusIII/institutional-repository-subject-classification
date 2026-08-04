@@ -7,6 +7,7 @@ def test_execution_scale_profiles():
     full_20k = load_config("configs/run_full_20k_2026.yaml")
     full_20k_v2 = load_config("configs/run_full_20k_v2_2026.yaml")
     full_20k_v3 = load_config("configs/run_full_20k_v3_2026.yaml")
+    convergence_audit = load_config("configs/run_convergence_audit_20k_2026.yaml")
     protocol_smoke_v3 = load_config("configs/run_protocol_smoke_1k_v3_2026.yaml")
     full_corpus_v3 = load_config("configs/run_full_corpus_v3_2026.yaml")
     full_final = load_config("configs/run_full_final_2026.yaml")
@@ -45,6 +46,11 @@ def test_execution_scale_profiles():
     assert protocol_smoke_v3["finetuning"]["early_stopping"]["enabled"] is False
     assert full_20k_v3["finetuning"]["max_epochs"] == 5
     assert full_20k_v3["finetuning"]["early_stopping"]["enabled"] is True
+    assert convergence_audit["sampling"]["target_n"] == 20000
+    assert convergence_audit["features"]["sets"] == ["fulltext"]
+    assert convergence_audit["representations"]["enabled"] == ["bm25", "tfidf"]
+    assert len(convergence_audit["classifiers"]["enabled"]) == 4
+    assert convergence_audit["finetuning"]["enabled"] is False
     assert full_corpus_v3["sampling"]["target_n"] is None
     assert full_final["sampling"]["target_n"] is None
     assert full_final["labels"]["top_k"] == 37

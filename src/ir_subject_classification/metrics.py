@@ -46,10 +46,15 @@ def multilabel_metrics(y_true: np.ndarray, y_pred: np.ndarray, scores: np.ndarra
         "jaccard_samples": jaccard_score(y_true, y_pred, average="samples", zero_division=0),
     }
     if scores is not None:
-        try:
-            result["average_precision_micro"] = average_precision_score(y_true, scores, average="micro")
-            result["average_precision_macro"] = average_precision_score(y_true, scores, average="macro")
-        except ValueError:
+        positive_labels = np.flatnonzero(y_true.sum(axis=0) > 0)
+        if len(positive_labels):
+            result["average_precision_micro"] = average_precision_score(
+                y_true[:, positive_labels], scores[:, positive_labels], average="micro"
+            )
+            result["average_precision_macro"] = average_precision_score(
+                y_true[:, positive_labels], scores[:, positive_labels], average="macro"
+            )
+        else:
             result["average_precision_micro"] = float("nan")
             result["average_precision_macro"] = float("nan")
         for k in (1, 3, 5):

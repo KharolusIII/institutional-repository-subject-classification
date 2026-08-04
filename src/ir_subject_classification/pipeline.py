@@ -8,7 +8,9 @@ import hashlib
 import json
 import logging
 import os
+import threading
 import time
+import warnings
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
@@ -17,7 +19,7 @@ import numpy as np
 import pandas as pd
 from sklearn.preprocessing import MultiLabelBinarizer
 
-from .classifiers import create_classifier, prediction_scores
+from .classifiers import convergence_diagnostics, create_classifier, prediction_scores
 from .config import load_config, save_resolved_config
 from .evaluation import language_performance, per_label_evaluation
 from .embeddings import DocumentEmbedder
@@ -734,11 +736,20 @@ def run_pipeline(config: dict[str, Any]) -> Path:
     (run_dir / "git_commit.txt").write_text(git_commit() + "\n", encoding="utf-8")
     started = time.perf_counter()
     timings: list[dict[str, object]] = []
+    convergence_path = run_dir / "classifier_convergence.csv"
+    convergence_rows: list[dict[str, object]] = (
+        pd.read_csv(convergence_path).to_dict("records")
+        if convergence_path.exists()
+        else []
+    )
     timing_sessions_path = run_dir / "timing_sessions.csv"
     if timing_sessions_path.exists():
         timing_sessions = pd.read_csv(timing_sessions_path).to_dict("records")
     else:
         timing_sessions = []
+    for previous_session in timing_sessions:
+        if previous_session.get("status") == "running":
+            previous_session["status"] = "interrupted"
     session_id = len(timing_sessions) + 1
     timing_sessions.append(
         {
@@ -751,16 +762,32 @@ def run_pipeline(config: dict[str, Any]) -> Path:
         }
     )
 
-    def persist_session_timing(status: str = "running") -> float:
-        timing_sessions[-1]["last_update_utc"] = datetime.now(timezone.utc).isoformat()
-        timing_sessions[-1]["seconds"] = time.perf_counter() - started
-        timing_sessions[-1]["status"] = status
-        temporary = timing_sessions_path.with_suffix(".tmp")
-        pd.DataFrame(timing_sessions).to_csv(temporary, index=False)
-        os.replace(temporary, timing_sessions_path)
-        return float(sum(float(row.get("seconds", 0.0)) for row in timing_sessions))
+    timing_lock = threading.Lock()
+
+    def persist_session_timing(status: str | None = "running") -> float:
+        with timing_lock:
+            timing_sessions[-1]["last_update_utc"] = datetime.now(timezone.utc).isoformat()
+            timing_sessions[-1]["seconds"] = time.perf_counter() - started
+            if status is not None:
+                timing_sessions[-1]["status"] = status
+            temporary = timing_sessions_path.with_suffix(".tmp")
+            pd.DataFrame(timing_sessions).to_csv(temporary, index=False)
+            os.replace(temporary, timing_sessions_path)
+            return float(sum(float(row.get("seconds", 0.0)) for row in timing_sessions))
+
+    heartbeat_stop = threading.Event()
+
+    def timing_heartbeat() -> None:
+        interval = float(config["experiment"].get("heartbeat_seconds", 60))
+        while not heartbeat_stop.wait(max(interval, 10.0)):
+            persist_session_timing(None)
+
+    heartbeat_thread = threading.Thread(
+        target=timing_heartbeat, name="run-timing-heartbeat", daemon=True
+    )
 
     persist_session_timing()
+    heartbeat_thread.start()
     stage = time.perf_counter()
     dataset, schema = construct_dataset(config)
     logger.info("Dataset constructed: %d handle-level rows before label selection", len(dataset))
@@ -1002,6 +1029,7 @@ def run_pipeline(config: dict[str, Any]) -> Path:
     if execution_stage == "prepare":
         timings.append({"stage": "prepare_total", "seconds": time.perf_counter() - started})
         pd.DataFrame(timings).to_csv(run_dir / "timing_prepare.csv", index=False)
+        heartbeat_stop.set()
         persist_session_timing("stage_completed")
         logger.info(
             "Preparation stage completed; rerun with stage=sparse, sbert, labse, or all"
@@ -1111,8 +1139,39 @@ def run_pipeline(config: dict[str, Any]) -> Path:
                         int(config["experiment"].get("seed", 42)),
                     )
                     stage = time.perf_counter()
-                    classifier.fit(x_train, y_all[train_idx])
+                    with warnings.catch_warnings(record=True) as fit_warnings:
+                        warnings.simplefilter("always")
+                        classifier.fit(x_train, y_all[train_idx])
                     fit_time = time.perf_counter() - stage
+                    diagnostic_rows = convergence_diagnostics(
+                        classifier, list(mlb.classes_)
+                    )
+                    warning_text = " | ".join(
+                        sorted({str(item.message) for item in fit_warnings})
+                    )
+                    if warning_text:
+                        logger.warning(
+                            "Classifier fit warnings repr=%s feature=%s preprocessing=%s classifier=%s: %s",
+                            representation,
+                            feature_set,
+                            mode,
+                            classifier_name,
+                            warning_text,
+                        )
+                    for row in diagnostic_rows:
+                        convergence_rows.append(
+                            {
+                                "phase": "validation",
+                                "preprocessing": mode,
+                                "feature_set": feature_set,
+                                "representation": representation,
+                                "classifier": classifier_name,
+                                "fit_warning": warning_text,
+                                **row,
+                            }
+                        )
+                    pd.DataFrame(convergence_rows).to_csv(convergence_path, index=False)
+                    persist_session_timing()
                     stage = time.perf_counter()
                     calibration_scores, score_kind = prediction_scores(classifier, x_calibration)
                     threshold = _calibrate_threshold(
@@ -1347,6 +1406,7 @@ def run_pipeline(config: dict[str, Any]) -> Path:
         pd.DataFrame(timings).to_csv(
             run_dir / f"timing_{execution_stage}.csv", index=False
         )
+        heartbeat_stop.set()
         persist_session_timing("stage_completed")
         logger.info(
             "Stage %s completed with %d total validation combinations; "
@@ -1486,7 +1546,25 @@ def run_pipeline(config: dict[str, Any]) -> Path:
             config["classifiers"].get(str(candidate.classifier), {}),
             int(config["experiment"].get("seed", 42)),
         )
-        classifier.fit(x_train, y_all[final_train_idx])
+        with warnings.catch_warnings(record=True) as fit_warnings:
+            warnings.simplefilter("always")
+            classifier.fit(x_train, y_all[final_train_idx])
+        final_diagnostics = convergence_diagnostics(classifier, list(mlb.classes_))
+        for row in final_diagnostics:
+            convergence_rows.append(
+                {
+                    "phase": "isolated_test_refit",
+                    "preprocessing": str(candidate.preprocessing),
+                    "feature_set": str(candidate.feature_set),
+                    "representation": str(candidate.representation),
+                    "classifier": str(candidate.classifier),
+                    "fit_warning": " | ".join(
+                        sorted({str(item.message) for item in fit_warnings})
+                    ),
+                    **row,
+                }
+            )
+        pd.DataFrame(convergence_rows).to_csv(convergence_path, index=False)
         calibration_scores, score_kind = prediction_scores(classifier, x_calibration)
         scores, _ = prediction_scores(classifier, x_test)
         calibrated_threshold = _calibrate_threshold(
@@ -1706,6 +1784,7 @@ def run_pipeline(config: dict[str, Any]) -> Path:
         predictions.to_parquet(run_dir / "predictions_test.parquet", index=False)
     except ImportError:
         predictions.to_csv(run_dir / "predictions_test.csv", index=False)
+    heartbeat_stop.set()
     total_seconds = persist_session_timing("completed")
     timings.append({"stage": "total", "seconds": total_seconds})
     pd.DataFrame(timings).to_csv(run_dir / "timing.csv", index=False)

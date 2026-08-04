@@ -1,0 +1,27 @@
+extends: run_full_20k_v3_2026.yaml
+experiment:
+  name: convergence_audit_20k_2026
+  stage: all
+  heartbeat_seconds: 60
+features:
+  sets: [fulltext]
+preprocessing:
+  modes: [language_stopwords]
+representations:
+  enabled: [bm25, tfidf]
+classifiers:
+  enabled:
+    - linear_svc_c1_tol1e4
+    - linear_svc_c1_tol5e4
+    - linear_svc_c05_tol1e4
+    - linear_svc_c05_tol5e4
+  linear_svc_c1_tol1e4: {C: 1.0, tol: 0.0001, max_iter: 200000, dual: auto}
+  linear_svc_c1_tol5e4: {C: 1.0, tol: 0.0005, max_iter: 200000, dual: auto}
+  linear_svc_c05_tol1e4: {C: 0.5, tol: 0.0001, max_iter: 200000, dual: auto}
+  linear_svc_c05_tol5e4: {C: 0.5, tol: 0.0005, max_iter: 200000, dual: auto}
+finetuning:
+  enabled: false
+evaluation:
+  secondary_test_families: []
+metrics:
+  comparative_bootstrap_resamples: 0

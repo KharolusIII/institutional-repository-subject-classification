@@ -104,6 +104,17 @@ with a new test partition. Active session time is accumulated in
 `timing_sessions.csv`, so scaling estimates include resumed work rather than
 only the final Colab session.
 
+### Focused convergence audit
+
+Before reporting the final sparse winner, run
+`configs/run_convergence_audit_20k_2026.yaml`. This profile reuses the
+segmented 20k dataset, skips transformer work, and compares BM25 and TF-IDF
+with four controlled Linear SVC settings. Selection remains isolated to
+validation and only the resulting global winner is evaluated on test.
+`classifier_convergence.csv` records iterations and convergence separately for
+every subject label and fit phase. The Colab notebook is set to this profile by
+default while the audit is pending.
+
 The `full-final` profile can be executed as five resumable Colab stages by
 setting `EXECUTION_STAGE` in the notebook:
 
