@@ -10,6 +10,7 @@ ROOT = Path("paper_artifacts")
 TABLES = ROOT / "tables"
 V3 = ROOT / "runs" / "v3_main"
 AUDIT = ROOT / "runs" / "convergence_audit"
+TEXT_SUFFIXES = {".csv", ".json", ".md", ".sha256", ".txt", ".yaml", ".yml"}
 
 
 def rows(path: Path) -> list[dict[str, str]]:
@@ -17,11 +18,17 @@ def rows(path: Path) -> list[dict[str, str]]:
         return list(csv.DictReader(stream))
 
 
+def portable_bytes(path: Path) -> bytes:
+    data = path.read_bytes()
+    if path.suffix.casefold() in TEXT_SUFFIXES:
+        data = data.replace(b"\r\n", b"\n").replace(b"\r", b"\n")
+    return data
+
+
 def test_reviewer_package_has_complete_aggregate_evidence():
     required = [
         ROOT / "SUPPLEMENTARY_MATERIAL.md",
         ROOT / "RUNS_AND_PROVENANCE.md",
-        ROOT / "MANUSCRIPT_AUDIT_FINAL.md",
         ROOT / "CACIC_2026_Supplementary_Material.docx",
         ROOT / "MANIFEST.sha256",
         TABLES / "final_test_metrics.csv",
@@ -121,4 +128,4 @@ def test_public_artifact_manifest_matches_every_file():
     }
     assert set(expected) == set(actual_paths)
     for relative, path in actual_paths.items():
-        assert hashlib.sha256(path.read_bytes()).hexdigest() == expected[relative]
+        assert hashlib.sha256(portable_bytes(path)).hexdigest() == expected[relative]

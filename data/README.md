@@ -11,8 +11,9 @@ Expected inputs:
   `file_id` and `text`;
 - target fields: configured explicitly in YAML.
 
-`data/sample/` contains a small synthetic corpus used only for tests and
-demonstration. It does not represent real SEDICI records.
+`examples/input/` contains the small synthetic corpus used for tests and
+demonstration. `examples/output/` contains a curated synthetic result example.
+Neither directory contains real SEDICI records.
 
 In Colab, very large TXT directories use `fulltext_format: gdrive_api` because
 the mounted filesystem may return an empty listing. The Drive API index is

@@ -1,7 +1,7 @@
 extends: sparse_2026.yaml
 experiment: {name: dummy_smoke, seed: 42, output_dir: outputs}
 data:
-  metadata_csv: data/sample/dummy_metadata.csv
+  metadata_csv: examples/input/dummy_metadata.csv
   mapping_csv: null
   fulltext_source: null
   fulltext_format: inline

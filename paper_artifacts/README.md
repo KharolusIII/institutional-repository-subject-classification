@@ -16,9 +16,8 @@ or model checkpoints are included.
 
 Start with [`SUPPLEMENTARY_MATERIAL.md`](SUPPLEMENTARY_MATERIAL.md) for the
 reviewer-oriented narrative, [`RUNS_AND_PROVENANCE.md`](RUNS_AND_PROVENANCE.md)
-for the two-run audit trail, and
-[`MANUSCRIPT_AUDIT_FINAL.md`](MANUSCRIPT_AUDIT_FINAL.md) for the final
-manuscript consistency check.
+for the two-run audit trail, and the run-specific aggregate directories for the
+underlying evidence.
 
 `CACIC_2026_Supplementary_Material.docx` is the submission-ready rendering of
 the same evidence, generated reproducibly by

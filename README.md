@@ -1,7 +1,7 @@
 # Institutional Repository Subject Classification
 
 [![Tests](https://github.com/KharolusIII/institutional-repository-subject-classification/actions/workflows/tests.yml/badge.svg)](https://github.com/KharolusIII/institutional-repository-subject-classification/actions/workflows/tests.yml)
-[![Open in Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/KharolusIII/institutional-repository-subject-classification/blob/main/notebooks/01_sedici_subject_classification_colab.ipynb)
+[![Open in Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/KharolusIII/institutional-repository-subject-classification/blob/main/notebooks/01_public_reproducibility_colab.ipynb)
 
 Reproducible multi-label subject classification for institutional repositories,
 developed around SEDICI (Universidad Nacional de La Plata). The system suggests
@@ -62,8 +62,9 @@ The generated data are synthetic and contain no repository records.
 
 ## Google Colab
 
-The public notebook defaults to synthetic data and runs without repository
-credentials. To use your own corpus, set `USE_DUMMY_DATA=False` and change:
+The public notebook defaults to synthetic data, anonymous Git access, temporary
+Colab storage, and no Google Drive mount. To use an authorized corpus, set
+`USE_DUMMY_DATA=False` and change:
 
 - `BASE_DIR`
 - `META_CSV`
@@ -72,13 +73,30 @@ credentials. To use your own corpus, set `USE_DUMMY_DATA=False` and change:
 - `CONFIG_FILE`
 - `EXECUTION_PROFILE`
 
-The notebook clones and installs the package, mounts Drive, validates inputs,
-runs the pipeline, and displays the main artifacts. With the default
-`USE_DUMMY_DATA=True`, no private input data are required.
+The notebook clones and installs the package, validates inputs, runs the
+pipeline, and displays the main artifacts. Drive mounting is opt-in through
+`USE_GOOGLE_DRIVE=True`. With the public defaults, no private input data or
+credentials are required.
+
+## Public repository layout
+
+- `src/ir_subject_classification/`: maintained pipeline implementation.
+- `notebooks/01_public_reproducibility_colab.ipynb`: anonymous, executable
+  Colab interface with generic paths and synthetic-data defaults.
+- `examples/input/`: synthetic input illustrating the public schema.
+- `examples/output/`: curated outputs from a successful synthetic smoke run.
+- `paper_artifacts/runs/v3_main/`: aggregate evidence from the main paper run.
+- `paper_artifacts/runs/convergence_audit/`: aggregate convergence-audit and
+  final-test evidence.
+- `paper_artifacts/figures/` and `paper_artifacts/tables/`: publication-ready
+  figures and compact reviewer tables.
+
+Private notebooks, authorized corpora, item-level predictions, caches,
+checkpoints, local paths, and credentials are intentionally excluded.
 
 ### Execution scale profiles
 
-The same scientific code can be run with six explicit profiles:
+The same scientific code can be run with explicit profiles:
 
 | Profile | Configuration | Intended use |
 |---|---|---|
@@ -177,24 +195,25 @@ on failure. `config_resolved.yaml`, `environment.txt`, `git_commit.txt`, and
 The final Colab cell prints the last 80 lines and includes an optional
 `files.download(...)` call for downloading the complete log.
 
-### Colab paths
+### Public Colab paths
 
-The notebook uses generic public defaults:
+The notebook uses generic temporary paths by default:
 
 ```text
-Persistent workspace:
-MyDrive/ir_subject_classification_workspace/
+Workspace:
+/content/ir_subject_classification_workspace/
 
 User-provided inputs:
-MyDrive/ir_subject_classification_data/
+/content/ir_subject_classification_data/
   metadata.csv
   fulltext_mapping.csv
   fulltext_txt/
 ```
 
-The Git checkout is created on fast, temporary Colab storage at
-`/content/institutional-repository-subject-classification`. Outputs and the
-Google Drive file index cache are persisted under the exact `BASE_DIR`.
+The Git checkout is created on temporary Colab storage at
+`/content/institutional-repository-subject-classification`. Outputs and caches
+are written under `BASE_DIR`. Users who explicitly enable Drive may point these
+generic variables to their own authorized Drive locations.
 Input metadata, mapping, and TXT files are read in place and are never moved or
 written by the pipeline.
 
@@ -204,18 +223,10 @@ Google Drive API, list file metadata once, cache it as
 `cache/drive_txt_index.csv`, map IDs to handles, and download only the
 full texts selected by the current execution profile.
 
-The public repository can be cloned without a token. For a private fork,
-optionally create a Colab secret named:
-
-```text
-GITHUB_TOKEN_IR_SUBJECT_CLASSIFICATION
-```
-
-Enable notebook access for that secret. When present, the notebook retrieves it with
-`google.colab.userdata`, uses a temporary `GIT_ASKPASS` helper for clone/pull,
-and removes the helper and token from its temporary environment immediately
-afterward. The token is never embedded in `REPOSITORY_URL`, Git remotes,
-configuration files, or run logs.
+The public notebook clones this public repository anonymously. It contains no
+token lookup, secret name, credential helper, or authenticated Git remote.
+Private working notebooks must be stored outside the repository and must never
+be committed.
 
 ## Input format
 

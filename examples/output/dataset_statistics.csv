@@ -1,0 +1,2 @@
+N_documents,N_labels,N_assignments,label_cardinality,label_density,labels_per_document_mean,labels_per_document_median,labels_per_document_std,labels_per_document_min,labels_per_document_max
+120,4,144,1.2,0.3,1.2,1.0,0.4,1.0,2.0
