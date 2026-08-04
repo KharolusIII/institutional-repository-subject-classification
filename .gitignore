@@ -42,3 +42,13 @@ mlruns/
 credentials*.json
 token*.json
 
+# Local manuscript workspace and publisher templates (not public artifacts)
+docs/article_revision/
+
+# Executed notebook copies and local scratch runs
+*.executed*.ipynb
+.tmp-*/
+
+# Historical local notebooks and manuscript copies
+Pipe 2025 OR/
+

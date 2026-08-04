@@ -32,8 +32,9 @@ metadata + mapping + TXT/Parquet
   → versioned reports and predictions
 ```
 
-The historical material is preserved unchanged in `Pipe 2025 OR/`. Its audit
-is in [`docs/LEGACY_2025_AUDIT.md`](docs/LEGACY_2025_AUDIT.md).
+The current package is the maintained implementation. Historical experiments
+are documented in [`docs/LEGACY_2025_AUDIT.md`](docs/LEGACY_2025_AUDIT.md),
+but are not required to run or evaluate the 2026 pipeline.
 
 ## Installation
 
@@ -61,7 +62,8 @@ The generated data are synthetic and contain no repository records.
 
 ## Google Colab
 
-Open the badge above. At the beginning change only:
+The public notebook defaults to synthetic data and runs without repository
+credentials. To use your own corpus, set `USE_DUMMY_DATA=False` and change:
 
 - `BASE_DIR`
 - `META_CSV`
@@ -71,8 +73,8 @@ Open the badge above. At the beginning change only:
 - `EXECUTION_PROFILE`
 
 The notebook clones and installs the package, mounts Drive, validates inputs,
-runs the pipeline, and displays the main artifacts. For a first check, enable
-`USE_DUMMY_DATA=True`; no Drive data are then required.
+runs the pipeline, and displays the main artifacts. With the default
+`USE_DUMMY_DATA=True`, no private input data are required.
 
 ### Execution scale profiles
 
@@ -112,8 +114,8 @@ segmented 20k dataset, skips transformer work, and compares BM25 and TF-IDF
 with four controlled Linear SVC settings. Selection remains isolated to
 validation and only the resulting global winner is evaluated on test.
 `classifier_convergence.csv` records iterations and convergence separately for
-every subject label and fit phase. The Colab notebook is set to this profile by
-default while the audit is pending.
+every subject label and fit phase. The audit has completed; aggregate evidence
+is available under [`paper_artifacts/`](paper_artifacts/).
 
 The `full-final` profile can be executed as five resumable Colab stages by
 setting `EXECUTION_STAGE` in the notebook:
@@ -175,28 +177,26 @@ on failure. `config_resolved.yaml`, `environment.txt`, `git_commit.txt`, and
 The final Colab cell prints the last 80 lines and includes an optional
 `files.download(...)` call for downloading the complete log.
 
-### SEDICI Colab paths
+### Colab paths
 
-The notebook defaults intentionally separate the new repository workspace from
-the historical, read-only inputs:
+The notebook uses generic public defaults:
 
 ```text
-Repository/workspace:
-MyDrive/A___Maestria_en_ID/Tareas_PLN/
-  001_1_Clasificador_Materias_SEDICI_Texto_Completo/
+Persistent workspace:
+MyDrive/ir_subject_classification_workspace/
 
-Historical inputs:
-MyDrive/A___Maestria_en_ID/Tareas_PLN/100_datos_thesis_maestria/
-  SEDICIpoblacion.csv
-  Mapeo_SEDICI_Rafa_data-1758643353469.csv
-  Datos_SEDICI/SEDICI_FullText_TXT/
+User-provided inputs:
+MyDrive/ir_subject_classification_data/
+  metadata.csv
+  fulltext_mapping.csv
+  fulltext_txt/
 ```
 
 The Git checkout is created on fast, temporary Colab storage at
 `/content/institutional-repository-subject-classification`. Outputs and the
 Google Drive file index cache are persisted under the exact `BASE_DIR`.
-Historical metadata, mapping, and TXT files are read from their existing
-locations and are never moved or written by the pipeline.
+Input metadata, mapping, and TXT files are read in place and are never moved or
+written by the pipeline.
 
 The TXT directory contains too many entries for reliable enumeration through
 the mounted Drive filesystem. Real-data profiles therefore authenticate with
@@ -204,13 +204,14 @@ Google Drive API, list file metadata once, cache it as
 `cache/drive_txt_index.csv`, map IDs to handles, and download only the
 full texts selected by the current execution profile.
 
-For GitHub access, create a private Colab secret named:
+The public repository can be cloned without a token. For a private fork,
+optionally create a Colab secret named:
 
 ```text
 GITHUB_TOKEN_IR_SUBJECT_CLASSIFICATION
 ```
 
-Enable notebook access for that secret. The notebook retrieves it with
+Enable notebook access for that secret. When present, the notebook retrieves it with
 `google.colab.userdata`, uses a temporary `GIT_ASKPASS` helper for clone/pull,
 and removes the helper and token from its temporary environment immediately
 afterward. The token is never embedded in `REPOSITORY_URL`, Git remotes,
@@ -285,6 +286,15 @@ Vocabulary, IDF, and BM25 are fitted on train only. Representation,
 preprocessing, classifier, pooling, hyperparameters, and thresholds are
 selected on validation. Test is evaluated only after the global winner and
 the pre-registered secondary family representatives are frozen.
+
+## Paper artifacts
+
+[`paper_artifacts/`](paper_artifacts/) contains the compact public evidence
+package: final and family-level metrics, validation leaders, per-subject
+results, language agreement, transformer epoch histories, convergence records,
+paired-bootstrap comparisons, and publication-ready figures. These are
+aggregate outputs only. Item-level predictions, handles, texts, manifests,
+caches, and model weights are deliberately excluded.
 
 ## Privacy and data distribution
 

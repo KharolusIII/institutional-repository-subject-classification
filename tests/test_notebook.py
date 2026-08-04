@@ -1,7 +1,7 @@
 import nbformat
 
 
-def test_colab_uses_repo_specific_secret_without_tokenized_remote():
+def test_colab_supports_optional_repo_specific_secret_without_tokenized_remote():
     notebook = nbformat.read("notebooks/01_sedici_subject_classification_colab.ipynb", as_version=4)
     source = "\n".join(cell.source for cell in notebook.cells)
     assert "GITHUB_TOKEN_IR_SUBJECT_CLASSIFICATION" in source
@@ -24,7 +24,7 @@ def test_colab_uses_repo_specific_secret_without_tokenized_remote():
     assert "'full-smoke': 'configs/run_full_smoke_1k_2026.yaml'" in source
     assert "'full-final': 'configs/run_full_final_2026.yaml'" in source
     assert "'full-20k': 'configs/run_full_20k_2026.yaml'" in source
-    assert "EXECUTION_PROFILE = 'convergence-audit-20k'" in source
+    assert "EXECUTION_PROFILE = 'smoke'" in source
     assert "'convergence-audit-20k': 'configs/run_convergence_audit_20k_2026.yaml'" in source
     assert "'full-20k-v3': 'configs/run_full_20k_v3_2026.yaml'" in source
     assert "'full-v3': 'configs/run_full_corpus_v3_2026.yaml'" in source
@@ -38,7 +38,10 @@ def test_colab_uses_repo_specific_secret_without_tokenized_remote():
     assert "dataset_prepared_segmented_v3.parquet" in source
     assert "fulltext_corpus_segmented_v3.parquet" in source
     assert "EXECUTION_STAGE = 'all'" in source
-    assert "USE_DUMMY_DATA = False" in source
+    assert "USE_DUMMY_DATA = True" in source
+    assert "public repositories do not require a token" in source
+    assert "if github_token:" in source
+    assert "ir_subject_classification_workspace" in source
     assert "materialized_fulltext_parquet" in source
     assert "materialized_dataset_parquet" in source
     assert "embeddings']['cache_dir" in source
@@ -46,3 +49,13 @@ def test_colab_uses_repo_specific_secret_without_tokenized_remote():
     assert "txt_probe = next(fulltext_path.glob" not in source
     assert "https://x-access-token:" not in source
     assert "github_token + '@github.com'" not in source
+
+
+def test_public_colab_is_clean_and_all_code_cells_compile():
+    notebook = nbformat.read("notebooks/01_sedici_subject_classification_colab.ipynb", as_version=4)
+    for index, cell in enumerate(notebook.cells):
+        if cell.cell_type != "code":
+            continue
+        assert not cell.outputs, f"Public notebook cell {index} contains saved outputs"
+        assert cell.execution_count is None
+        compile(cell.source, f"public-colab-cell-{index}", "exec")

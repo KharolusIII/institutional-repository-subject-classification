@@ -1,0 +1,334 @@
+phase,preprocessing,feature_set,representation,classifier,fit_warning,label,iterations,max_iter,converged
+validation,language_stopwords,fulltext,bm25,linear_svc_c1_tol1e4,"Liblinear failed to converge, increase the number of iterations.",Antropología,56,200000,True
+validation,language_stopwords,fulltext,bm25,linear_svc_c1_tol1e4,"Liblinear failed to converge, increase the number of iterations.",Arquitectura,47,200000,True
+validation,language_stopwords,fulltext,bm25,linear_svc_c1_tol1e4,"Liblinear failed to converge, increase the number of iterations.",Astronomía,70,200000,True
+validation,language_stopwords,fulltext,bm25,linear_svc_c1_tol1e4,"Liblinear failed to converge, increase the number of iterations.",Bellas Artes,353,200000,True
+validation,language_stopwords,fulltext,bm25,linear_svc_c1_tol1e4,"Liblinear failed to converge, increase the number of iterations.",Bibliotecología,350,200000,True
+validation,language_stopwords,fulltext,bm25,linear_svc_c1_tol1e4,"Liblinear failed to converge, increase the number of iterations.",Biología,40,200000,True
+validation,language_stopwords,fulltext,bm25,linear_svc_c1_tol1e4,"Liblinear failed to converge, increase the number of iterations.",Ciencias Agrarias,153,200000,True
+validation,language_stopwords,fulltext,bm25,linear_svc_c1_tol1e4,"Liblinear failed to converge, increase the number of iterations.",Ciencias Astronómicas,55,200000,True
+validation,language_stopwords,fulltext,bm25,linear_svc_c1_tol1e4,"Liblinear failed to converge, increase the number of iterations.",Ciencias Económicas,770,200000,True
+validation,language_stopwords,fulltext,bm25,linear_svc_c1_tol1e4,"Liblinear failed to converge, increase the number of iterations.",Ciencias Exactas,74,200000,True
+validation,language_stopwords,fulltext,bm25,linear_svc_c1_tol1e4,"Liblinear failed to converge, increase the number of iterations.",Ciencias Informáticas,148,200000,True
+validation,language_stopwords,fulltext,bm25,linear_svc_c1_tol1e4,"Liblinear failed to converge, increase the number of iterations.",Ciencias Jurídicas,25,200000,True
+validation,language_stopwords,fulltext,bm25,linear_svc_c1_tol1e4,"Liblinear failed to converge, increase the number of iterations.",Ciencias Médicas,315,200000,True
+validation,language_stopwords,fulltext,bm25,linear_svc_c1_tol1e4,"Liblinear failed to converge, increase the number of iterations.",Ciencias Naturales,32,200000,True
+validation,language_stopwords,fulltext,bm25,linear_svc_c1_tol1e4,"Liblinear failed to converge, increase the number of iterations.",Ciencias Sociales,114808,200000,True
+validation,language_stopwords,fulltext,bm25,linear_svc_c1_tol1e4,"Liblinear failed to converge, increase the number of iterations.",Ciencias Veterinarias,49,200000,True
+validation,language_stopwords,fulltext,bm25,linear_svc_c1_tol1e4,"Liblinear failed to converge, increase the number of iterations.",Ciencias de la Educación,305,200000,True
+validation,language_stopwords,fulltext,bm25,linear_svc_c1_tol1e4,"Liblinear failed to converge, increase the number of iterations.",Comunicación,35,200000,True
+validation,language_stopwords,fulltext,bm25,linear_svc_c1_tol1e4,"Liblinear failed to converge, increase the number of iterations.",Comunicación Social,32,200000,True
+validation,language_stopwords,fulltext,bm25,linear_svc_c1_tol1e4,"Liblinear failed to converge, increase the number of iterations.",Educación,115242,200000,True
+validation,language_stopwords,fulltext,bm25,linear_svc_c1_tol1e4,"Liblinear failed to converge, increase the number of iterations.",Educación Física,307,200000,True
+validation,language_stopwords,fulltext,bm25,linear_svc_c1_tol1e4,"Liblinear failed to converge, increase the number of iterations.",Filosofía,1567,200000,True
+validation,language_stopwords,fulltext,bm25,linear_svc_c1_tol1e4,"Liblinear failed to converge, increase the number of iterations.",Física,156,200000,True
+validation,language_stopwords,fulltext,bm25,linear_svc_c1_tol1e4,"Liblinear failed to converge, increase the number of iterations.",Geografía,224,200000,True
+validation,language_stopwords,fulltext,bm25,linear_svc_c1_tol1e4,"Liblinear failed to converge, increase the number of iterations.",Historia,2740,200000,True
+validation,language_stopwords,fulltext,bm25,linear_svc_c1_tol1e4,"Liblinear failed to converge, increase the number of iterations.",Humanidades,200000,200000,False
+validation,language_stopwords,fulltext,bm25,linear_svc_c1_tol1e4,"Liblinear failed to converge, increase the number of iterations.",Ingeniería,39,200000,True
+validation,language_stopwords,fulltext,bm25,linear_svc_c1_tol1e4,"Liblinear failed to converge, increase the number of iterations.",Letras,43,200000,True
+validation,language_stopwords,fulltext,bm25,linear_svc_c1_tol1e4,"Liblinear failed to converge, increase the number of iterations.",Odontología,51,200000,True
+validation,language_stopwords,fulltext,bm25,linear_svc_c1_tol1e4,"Liblinear failed to converge, increase the number of iterations.",Periodismo,37,200000,True
+validation,language_stopwords,fulltext,bm25,linear_svc_c1_tol1e4,"Liblinear failed to converge, increase the number of iterations.",Psicología,20,200000,True
+validation,language_stopwords,fulltext,bm25,linear_svc_c1_tol1e4,"Liblinear failed to converge, increase the number of iterations.",Química,166,200000,True
+validation,language_stopwords,fulltext,bm25,linear_svc_c1_tol1e4,"Liblinear failed to converge, increase the number of iterations.",Relaciones Internacionales,41,200000,True
+validation,language_stopwords,fulltext,bm25,linear_svc_c1_tol1e4,"Liblinear failed to converge, increase the number of iterations.",Sociología,2296,200000,True
+validation,language_stopwords,fulltext,bm25,linear_svc_c1_tol1e4,"Liblinear failed to converge, increase the number of iterations.",Trabajo Social,20,200000,True
+validation,language_stopwords,fulltext,bm25,linear_svc_c1_tol1e4,"Liblinear failed to converge, increase the number of iterations.",Urbanismo,30,200000,True
+validation,language_stopwords,fulltext,bm25,linear_svc_c1_tol1e4,"Liblinear failed to converge, increase the number of iterations.",Zoología,80,200000,True
+validation,language_stopwords,fulltext,bm25,linear_svc_c1_tol5e4,"Liblinear failed to converge, increase the number of iterations.",Antropología,48,200000,True
+validation,language_stopwords,fulltext,bm25,linear_svc_c1_tol5e4,"Liblinear failed to converge, increase the number of iterations.",Arquitectura,23,200000,True
+validation,language_stopwords,fulltext,bm25,linear_svc_c1_tol5e4,"Liblinear failed to converge, increase the number of iterations.",Astronomía,69,200000,True
+validation,language_stopwords,fulltext,bm25,linear_svc_c1_tol5e4,"Liblinear failed to converge, increase the number of iterations.",Bellas Artes,351,200000,True
+validation,language_stopwords,fulltext,bm25,linear_svc_c1_tol5e4,"Liblinear failed to converge, increase the number of iterations.",Bibliotecología,72,200000,True
+validation,language_stopwords,fulltext,bm25,linear_svc_c1_tol5e4,"Liblinear failed to converge, increase the number of iterations.",Biología,31,200000,True
+validation,language_stopwords,fulltext,bm25,linear_svc_c1_tol5e4,"Liblinear failed to converge, increase the number of iterations.",Ciencias Agrarias,151,200000,True
+validation,language_stopwords,fulltext,bm25,linear_svc_c1_tol5e4,"Liblinear failed to converge, increase the number of iterations.",Ciencias Astronómicas,26,200000,True
+validation,language_stopwords,fulltext,bm25,linear_svc_c1_tol5e4,"Liblinear failed to converge, increase the number of iterations.",Ciencias Económicas,286,200000,True
+validation,language_stopwords,fulltext,bm25,linear_svc_c1_tol5e4,"Liblinear failed to converge, increase the number of iterations.",Ciencias Exactas,59,200000,True
+validation,language_stopwords,fulltext,bm25,linear_svc_c1_tol5e4,"Liblinear failed to converge, increase the number of iterations.",Ciencias Informáticas,44,200000,True
+validation,language_stopwords,fulltext,bm25,linear_svc_c1_tol5e4,"Liblinear failed to converge, increase the number of iterations.",Ciencias Jurídicas,21,200000,True
+validation,language_stopwords,fulltext,bm25,linear_svc_c1_tol5e4,"Liblinear failed to converge, increase the number of iterations.",Ciencias Médicas,27,200000,True
+validation,language_stopwords,fulltext,bm25,linear_svc_c1_tol5e4,"Liblinear failed to converge, increase the number of iterations.",Ciencias Naturales,31,200000,True
+validation,language_stopwords,fulltext,bm25,linear_svc_c1_tol5e4,"Liblinear failed to converge, increase the number of iterations.",Ciencias Sociales,96209,200000,True
+validation,language_stopwords,fulltext,bm25,linear_svc_c1_tol5e4,"Liblinear failed to converge, increase the number of iterations.",Ciencias Veterinarias,32,200000,True
+validation,language_stopwords,fulltext,bm25,linear_svc_c1_tol5e4,"Liblinear failed to converge, increase the number of iterations.",Ciencias de la Educación,79,200000,True
+validation,language_stopwords,fulltext,bm25,linear_svc_c1_tol5e4,"Liblinear failed to converge, increase the number of iterations.",Comunicación,28,200000,True
+validation,language_stopwords,fulltext,bm25,linear_svc_c1_tol5e4,"Liblinear failed to converge, increase the number of iterations.",Comunicación Social,26,200000,True
+validation,language_stopwords,fulltext,bm25,linear_svc_c1_tol5e4,"Liblinear failed to converge, increase the number of iterations.",Educación,95926,200000,True
+validation,language_stopwords,fulltext,bm25,linear_svc_c1_tol5e4,"Liblinear failed to converge, increase the number of iterations.",Educación Física,39,200000,True
+validation,language_stopwords,fulltext,bm25,linear_svc_c1_tol5e4,"Liblinear failed to converge, increase the number of iterations.",Filosofía,144,200000,True
+validation,language_stopwords,fulltext,bm25,linear_svc_c1_tol5e4,"Liblinear failed to converge, increase the number of iterations.",Física,154,200000,True
+validation,language_stopwords,fulltext,bm25,linear_svc_c1_tol5e4,"Liblinear failed to converge, increase the number of iterations.",Geografía,48,200000,True
+validation,language_stopwords,fulltext,bm25,linear_svc_c1_tol5e4,"Liblinear failed to converge, increase the number of iterations.",Historia,639,200000,True
+validation,language_stopwords,fulltext,bm25,linear_svc_c1_tol5e4,"Liblinear failed to converge, increase the number of iterations.",Humanidades,200000,200000,False
+validation,language_stopwords,fulltext,bm25,linear_svc_c1_tol5e4,"Liblinear failed to converge, increase the number of iterations.",Ingeniería,38,200000,True
+validation,language_stopwords,fulltext,bm25,linear_svc_c1_tol5e4,"Liblinear failed to converge, increase the number of iterations.",Letras,29,200000,True
+validation,language_stopwords,fulltext,bm25,linear_svc_c1_tol5e4,"Liblinear failed to converge, increase the number of iterations.",Odontología,25,200000,True
+validation,language_stopwords,fulltext,bm25,linear_svc_c1_tol5e4,"Liblinear failed to converge, increase the number of iterations.",Periodismo,26,200000,True
+validation,language_stopwords,fulltext,bm25,linear_svc_c1_tol5e4,"Liblinear failed to converge, increase the number of iterations.",Psicología,17,200000,True
+validation,language_stopwords,fulltext,bm25,linear_svc_c1_tol5e4,"Liblinear failed to converge, increase the number of iterations.",Química,50,200000,True
+validation,language_stopwords,fulltext,bm25,linear_svc_c1_tol5e4,"Liblinear failed to converge, increase the number of iterations.",Relaciones Internacionales,35,200000,True
+validation,language_stopwords,fulltext,bm25,linear_svc_c1_tol5e4,"Liblinear failed to converge, increase the number of iterations.",Sociología,219,200000,True
+validation,language_stopwords,fulltext,bm25,linear_svc_c1_tol5e4,"Liblinear failed to converge, increase the number of iterations.",Trabajo Social,16,200000,True
+validation,language_stopwords,fulltext,bm25,linear_svc_c1_tol5e4,"Liblinear failed to converge, increase the number of iterations.",Urbanismo,29,200000,True
+validation,language_stopwords,fulltext,bm25,linear_svc_c1_tol5e4,"Liblinear failed to converge, increase the number of iterations.",Zoología,29,200000,True
+validation,language_stopwords,fulltext,bm25,linear_svc_c05_tol1e4,,Antropología,73,200000,True
+validation,language_stopwords,fulltext,bm25,linear_svc_c05_tol1e4,,Arquitectura,735,200000,True
+validation,language_stopwords,fulltext,bm25,linear_svc_c05_tol1e4,,Astronomía,133,200000,True
+validation,language_stopwords,fulltext,bm25,linear_svc_c05_tol1e4,,Bellas Artes,737,200000,True
+validation,language_stopwords,fulltext,bm25,linear_svc_c05_tol1e4,,Bibliotecología,506,200000,True
+validation,language_stopwords,fulltext,bm25,linear_svc_c05_tol1e4,,Biología,93,200000,True
+validation,language_stopwords,fulltext,bm25,linear_svc_c05_tol1e4,,Ciencias Agrarias,178,200000,True
+validation,language_stopwords,fulltext,bm25,linear_svc_c05_tol1e4,,Ciencias Astronómicas,805,200000,True
+validation,language_stopwords,fulltext,bm25,linear_svc_c05_tol1e4,,Ciencias Económicas,1104,200000,True
+validation,language_stopwords,fulltext,bm25,linear_svc_c05_tol1e4,,Ciencias Exactas,223,200000,True
+validation,language_stopwords,fulltext,bm25,linear_svc_c05_tol1e4,,Ciencias Informáticas,424,200000,True
+validation,language_stopwords,fulltext,bm25,linear_svc_c05_tol1e4,,Ciencias Jurídicas,40,200000,True
+validation,language_stopwords,fulltext,bm25,linear_svc_c05_tol1e4,,Ciencias Médicas,370,200000,True
+validation,language_stopwords,fulltext,bm25,linear_svc_c05_tol1e4,,Ciencias Naturales,387,200000,True
+validation,language_stopwords,fulltext,bm25,linear_svc_c05_tol1e4,,Ciencias Sociales,57238,200000,True
+validation,language_stopwords,fulltext,bm25,linear_svc_c05_tol1e4,,Ciencias Veterinarias,57,200000,True
+validation,language_stopwords,fulltext,bm25,linear_svc_c05_tol1e4,,Ciencias de la Educación,643,200000,True
+validation,language_stopwords,fulltext,bm25,linear_svc_c05_tol1e4,,Comunicación,1490,200000,True
+validation,language_stopwords,fulltext,bm25,linear_svc_c05_tol1e4,,Comunicación Social,608,200000,True
+validation,language_stopwords,fulltext,bm25,linear_svc_c05_tol1e4,,Educación,57629,200000,True
+validation,language_stopwords,fulltext,bm25,linear_svc_c05_tol1e4,,Educación Física,387,200000,True
+validation,language_stopwords,fulltext,bm25,linear_svc_c05_tol1e4,,Filosofía,1777,200000,True
+validation,language_stopwords,fulltext,bm25,linear_svc_c05_tol1e4,,Física,522,200000,True
+validation,language_stopwords,fulltext,bm25,linear_svc_c05_tol1e4,,Geografía,717,200000,True
+validation,language_stopwords,fulltext,bm25,linear_svc_c05_tol1e4,,Historia,2084,200000,True
+validation,language_stopwords,fulltext,bm25,linear_svc_c05_tol1e4,,Humanidades,194983,200000,True
+validation,language_stopwords,fulltext,bm25,linear_svc_c05_tol1e4,,Ingeniería,325,200000,True
+validation,language_stopwords,fulltext,bm25,linear_svc_c05_tol1e4,,Letras,503,200000,True
+validation,language_stopwords,fulltext,bm25,linear_svc_c05_tol1e4,,Odontología,2298,200000,True
+validation,language_stopwords,fulltext,bm25,linear_svc_c05_tol1e4,,Periodismo,728,200000,True
+validation,language_stopwords,fulltext,bm25,linear_svc_c05_tol1e4,,Psicología,40,200000,True
+validation,language_stopwords,fulltext,bm25,linear_svc_c05_tol1e4,,Química,329,200000,True
+validation,language_stopwords,fulltext,bm25,linear_svc_c05_tol1e4,,Relaciones Internacionales,44,200000,True
+validation,language_stopwords,fulltext,bm25,linear_svc_c05_tol1e4,,Sociología,2042,200000,True
+validation,language_stopwords,fulltext,bm25,linear_svc_c05_tol1e4,,Trabajo Social,141,200000,True
+validation,language_stopwords,fulltext,bm25,linear_svc_c05_tol1e4,,Urbanismo,532,200000,True
+validation,language_stopwords,fulltext,bm25,linear_svc_c05_tol1e4,,Zoología,580,200000,True
+validation,language_stopwords,fulltext,bm25,linear_svc_c05_tol5e4,,Antropología,46,200000,True
+validation,language_stopwords,fulltext,bm25,linear_svc_c05_tol5e4,,Arquitectura,25,200000,True
+validation,language_stopwords,fulltext,bm25,linear_svc_c05_tol5e4,,Astronomía,89,200000,True
+validation,language_stopwords,fulltext,bm25,linear_svc_c05_tol5e4,,Bellas Artes,402,200000,True
+validation,language_stopwords,fulltext,bm25,linear_svc_c05_tol5e4,,Bibliotecología,174,200000,True
+validation,language_stopwords,fulltext,bm25,linear_svc_c05_tol5e4,,Biología,88,200000,True
+validation,language_stopwords,fulltext,bm25,linear_svc_c05_tol5e4,,Ciencias Agrarias,176,200000,True
+validation,language_stopwords,fulltext,bm25,linear_svc_c05_tol5e4,,Ciencias Astronómicas,24,200000,True
+validation,language_stopwords,fulltext,bm25,linear_svc_c05_tol5e4,,Ciencias Económicas,342,200000,True
+validation,language_stopwords,fulltext,bm25,linear_svc_c05_tol5e4,,Ciencias Exactas,56,200000,True
+validation,language_stopwords,fulltext,bm25,linear_svc_c05_tol5e4,,Ciencias Informáticas,80,200000,True
+validation,language_stopwords,fulltext,bm25,linear_svc_c05_tol5e4,,Ciencias Jurídicas,22,200000,True
+validation,language_stopwords,fulltext,bm25,linear_svc_c05_tol5e4,,Ciencias Médicas,62,200000,True
+validation,language_stopwords,fulltext,bm25,linear_svc_c05_tol5e4,,Ciencias Naturales,23,200000,True
+validation,language_stopwords,fulltext,bm25,linear_svc_c05_tol5e4,,Ciencias Sociales,47987,200000,True
+validation,language_stopwords,fulltext,bm25,linear_svc_c05_tol5e4,,Ciencias Veterinarias,45,200000,True
+validation,language_stopwords,fulltext,bm25,linear_svc_c05_tol5e4,,Ciencias de la Educación,78,200000,True
+validation,language_stopwords,fulltext,bm25,linear_svc_c05_tol5e4,,Comunicación,44,200000,True
+validation,language_stopwords,fulltext,bm25,linear_svc_c05_tol5e4,,Comunicación Social,29,200000,True
+validation,language_stopwords,fulltext,bm25,linear_svc_c05_tol5e4,,Educación,47974,200000,True
+validation,language_stopwords,fulltext,bm25,linear_svc_c05_tol5e4,,Educación Física,113,200000,True
+validation,language_stopwords,fulltext,bm25,linear_svc_c05_tol5e4,,Filosofía,406,200000,True
+validation,language_stopwords,fulltext,bm25,linear_svc_c05_tol5e4,,Física,185,200000,True
+validation,language_stopwords,fulltext,bm25,linear_svc_c05_tol5e4,,Geografía,50,200000,True
+validation,language_stopwords,fulltext,bm25,linear_svc_c05_tol5e4,,Historia,690,200000,True
+validation,language_stopwords,fulltext,bm25,linear_svc_c05_tol5e4,,Humanidades,162852,200000,True
+validation,language_stopwords,fulltext,bm25,linear_svc_c05_tol5e4,,Ingeniería,60,200000,True
+validation,language_stopwords,fulltext,bm25,linear_svc_c05_tol5e4,,Letras,41,200000,True
+validation,language_stopwords,fulltext,bm25,linear_svc_c05_tol5e4,,Odontología,23,200000,True
+validation,language_stopwords,fulltext,bm25,linear_svc_c05_tol5e4,,Periodismo,26,200000,True
+validation,language_stopwords,fulltext,bm25,linear_svc_c05_tol5e4,,Psicología,38,200000,True
+validation,language_stopwords,fulltext,bm25,linear_svc_c05_tol5e4,,Química,37,200000,True
+validation,language_stopwords,fulltext,bm25,linear_svc_c05_tol5e4,,Relaciones Internacionales,36,200000,True
+validation,language_stopwords,fulltext,bm25,linear_svc_c05_tol5e4,,Sociología,387,200000,True
+validation,language_stopwords,fulltext,bm25,linear_svc_c05_tol5e4,,Trabajo Social,20,200000,True
+validation,language_stopwords,fulltext,bm25,linear_svc_c05_tol5e4,,Urbanismo,20,200000,True
+validation,language_stopwords,fulltext,bm25,linear_svc_c05_tol5e4,,Zoología,23,200000,True
+validation,language_stopwords,fulltext,tfidf,linear_svc_c1_tol1e4,,Antropología,31,200000,True
+validation,language_stopwords,fulltext,tfidf,linear_svc_c1_tol1e4,,Arquitectura,45,200000,True
+validation,language_stopwords,fulltext,tfidf,linear_svc_c1_tol1e4,,Astronomía,37,200000,True
+validation,language_stopwords,fulltext,tfidf,linear_svc_c1_tol1e4,,Bellas Artes,38,200000,True
+validation,language_stopwords,fulltext,tfidf,linear_svc_c1_tol1e4,,Bibliotecología,40,200000,True
+validation,language_stopwords,fulltext,tfidf,linear_svc_c1_tol1e4,,Biología,33,200000,True
+validation,language_stopwords,fulltext,tfidf,linear_svc_c1_tol1e4,,Ciencias Agrarias,31,200000,True
+validation,language_stopwords,fulltext,tfidf,linear_svc_c1_tol1e4,,Ciencias Astronómicas,31,200000,True
+validation,language_stopwords,fulltext,tfidf,linear_svc_c1_tol1e4,,Ciencias Económicas,32,200000,True
+validation,language_stopwords,fulltext,tfidf,linear_svc_c1_tol1e4,,Ciencias Exactas,40,200000,True
+validation,language_stopwords,fulltext,tfidf,linear_svc_c1_tol1e4,,Ciencias Informáticas,40,200000,True
+validation,language_stopwords,fulltext,tfidf,linear_svc_c1_tol1e4,,Ciencias Jurídicas,37,200000,True
+validation,language_stopwords,fulltext,tfidf,linear_svc_c1_tol1e4,,Ciencias Médicas,31,200000,True
+validation,language_stopwords,fulltext,tfidf,linear_svc_c1_tol1e4,,Ciencias Naturales,41,200000,True
+validation,language_stopwords,fulltext,tfidf,linear_svc_c1_tol1e4,,Ciencias Sociales,41,200000,True
+validation,language_stopwords,fulltext,tfidf,linear_svc_c1_tol1e4,,Ciencias Veterinarias,33,200000,True
+validation,language_stopwords,fulltext,tfidf,linear_svc_c1_tol1e4,,Ciencias de la Educación,42,200000,True
+validation,language_stopwords,fulltext,tfidf,linear_svc_c1_tol1e4,,Comunicación,38,200000,True
+validation,language_stopwords,fulltext,tfidf,linear_svc_c1_tol1e4,,Comunicación Social,32,200000,True
+validation,language_stopwords,fulltext,tfidf,linear_svc_c1_tol1e4,,Educación,40,200000,True
+validation,language_stopwords,fulltext,tfidf,linear_svc_c1_tol1e4,,Educación Física,34,200000,True
+validation,language_stopwords,fulltext,tfidf,linear_svc_c1_tol1e4,,Filosofía,35,200000,True
+validation,language_stopwords,fulltext,tfidf,linear_svc_c1_tol1e4,,Física,36,200000,True
+validation,language_stopwords,fulltext,tfidf,linear_svc_c1_tol1e4,,Geografía,33,200000,True
+validation,language_stopwords,fulltext,tfidf,linear_svc_c1_tol1e4,,Historia,40,200000,True
+validation,language_stopwords,fulltext,tfidf,linear_svc_c1_tol1e4,,Humanidades,42,200000,True
+validation,language_stopwords,fulltext,tfidf,linear_svc_c1_tol1e4,,Ingeniería,33,200000,True
+validation,language_stopwords,fulltext,tfidf,linear_svc_c1_tol1e4,,Letras,43,200000,True
+validation,language_stopwords,fulltext,tfidf,linear_svc_c1_tol1e4,,Odontología,34,200000,True
+validation,language_stopwords,fulltext,tfidf,linear_svc_c1_tol1e4,,Periodismo,36,200000,True
+validation,language_stopwords,fulltext,tfidf,linear_svc_c1_tol1e4,,Psicología,32,200000,True
+validation,language_stopwords,fulltext,tfidf,linear_svc_c1_tol1e4,,Química,32,200000,True
+validation,language_stopwords,fulltext,tfidf,linear_svc_c1_tol1e4,,Relaciones Internacionales,35,200000,True
+validation,language_stopwords,fulltext,tfidf,linear_svc_c1_tol1e4,,Sociología,37,200000,True
+validation,language_stopwords,fulltext,tfidf,linear_svc_c1_tol1e4,,Trabajo Social,32,200000,True
+validation,language_stopwords,fulltext,tfidf,linear_svc_c1_tol1e4,,Urbanismo,31,200000,True
+validation,language_stopwords,fulltext,tfidf,linear_svc_c1_tol1e4,,Zoología,35,200000,True
+validation,language_stopwords,fulltext,tfidf,linear_svc_c1_tol5e4,,Antropología,25,200000,True
+validation,language_stopwords,fulltext,tfidf,linear_svc_c1_tol5e4,,Arquitectura,38,200000,True
+validation,language_stopwords,fulltext,tfidf,linear_svc_c1_tol5e4,,Astronomía,30,200000,True
+validation,language_stopwords,fulltext,tfidf,linear_svc_c1_tol5e4,,Bellas Artes,32,200000,True
+validation,language_stopwords,fulltext,tfidf,linear_svc_c1_tol5e4,,Bibliotecología,34,200000,True
+validation,language_stopwords,fulltext,tfidf,linear_svc_c1_tol5e4,,Biología,28,200000,True
+validation,language_stopwords,fulltext,tfidf,linear_svc_c1_tol5e4,,Ciencias Agrarias,26,200000,True
+validation,language_stopwords,fulltext,tfidf,linear_svc_c1_tol5e4,,Ciencias Astronómicas,26,200000,True
+validation,language_stopwords,fulltext,tfidf,linear_svc_c1_tol5e4,,Ciencias Económicas,27,200000,True
+validation,language_stopwords,fulltext,tfidf,linear_svc_c1_tol5e4,,Ciencias Exactas,34,200000,True
+validation,language_stopwords,fulltext,tfidf,linear_svc_c1_tol5e4,,Ciencias Informáticas,34,200000,True
+validation,language_stopwords,fulltext,tfidf,linear_svc_c1_tol5e4,,Ciencias Jurídicas,30,200000,True
+validation,language_stopwords,fulltext,tfidf,linear_svc_c1_tol5e4,,Ciencias Médicas,26,200000,True
+validation,language_stopwords,fulltext,tfidf,linear_svc_c1_tol5e4,,Ciencias Naturales,34,200000,True
+validation,language_stopwords,fulltext,tfidf,linear_svc_c1_tol5e4,,Ciencias Sociales,34,200000,True
+validation,language_stopwords,fulltext,tfidf,linear_svc_c1_tol5e4,,Ciencias Veterinarias,27,200000,True
+validation,language_stopwords,fulltext,tfidf,linear_svc_c1_tol5e4,,Ciencias de la Educación,35,200000,True
+validation,language_stopwords,fulltext,tfidf,linear_svc_c1_tol5e4,,Comunicación,32,200000,True
+validation,language_stopwords,fulltext,tfidf,linear_svc_c1_tol5e4,,Comunicación Social,27,200000,True
+validation,language_stopwords,fulltext,tfidf,linear_svc_c1_tol5e4,,Educación,34,200000,True
+validation,language_stopwords,fulltext,tfidf,linear_svc_c1_tol5e4,,Educación Física,29,200000,True
+validation,language_stopwords,fulltext,tfidf,linear_svc_c1_tol5e4,,Filosofía,29,200000,True
+validation,language_stopwords,fulltext,tfidf,linear_svc_c1_tol5e4,,Física,30,200000,True
+validation,language_stopwords,fulltext,tfidf,linear_svc_c1_tol5e4,,Geografía,27,200000,True
+validation,language_stopwords,fulltext,tfidf,linear_svc_c1_tol5e4,,Historia,34,200000,True
+validation,language_stopwords,fulltext,tfidf,linear_svc_c1_tol5e4,,Humanidades,35,200000,True
+validation,language_stopwords,fulltext,tfidf,linear_svc_c1_tol5e4,,Ingeniería,27,200000,True
+validation,language_stopwords,fulltext,tfidf,linear_svc_c1_tol5e4,,Letras,37,200000,True
+validation,language_stopwords,fulltext,tfidf,linear_svc_c1_tol5e4,,Odontología,28,200000,True
+validation,language_stopwords,fulltext,tfidf,linear_svc_c1_tol5e4,,Periodismo,30,200000,True
+validation,language_stopwords,fulltext,tfidf,linear_svc_c1_tol5e4,,Psicología,26,200000,True
+validation,language_stopwords,fulltext,tfidf,linear_svc_c1_tol5e4,,Química,27,200000,True
+validation,language_stopwords,fulltext,tfidf,linear_svc_c1_tol5e4,,Relaciones Internacionales,29,200000,True
+validation,language_stopwords,fulltext,tfidf,linear_svc_c1_tol5e4,,Sociología,30,200000,True
+validation,language_stopwords,fulltext,tfidf,linear_svc_c1_tol5e4,,Trabajo Social,27,200000,True
+validation,language_stopwords,fulltext,tfidf,linear_svc_c1_tol5e4,,Urbanismo,27,200000,True
+validation,language_stopwords,fulltext,tfidf,linear_svc_c1_tol5e4,,Zoología,29,200000,True
+validation,language_stopwords,fulltext,tfidf,linear_svc_c05_tol1e4,,Antropología,20,200000,True
+validation,language_stopwords,fulltext,tfidf,linear_svc_c05_tol1e4,,Arquitectura,26,200000,True
+validation,language_stopwords,fulltext,tfidf,linear_svc_c05_tol1e4,,Astronomía,23,200000,True
+validation,language_stopwords,fulltext,tfidf,linear_svc_c05_tol1e4,,Bellas Artes,24,200000,True
+validation,language_stopwords,fulltext,tfidf,linear_svc_c05_tol1e4,,Bibliotecología,25,200000,True
+validation,language_stopwords,fulltext,tfidf,linear_svc_c05_tol1e4,,Biología,21,200000,True
+validation,language_stopwords,fulltext,tfidf,linear_svc_c05_tol1e4,,Ciencias Agrarias,21,200000,True
+validation,language_stopwords,fulltext,tfidf,linear_svc_c05_tol1e4,,Ciencias Astronómicas,21,200000,True
+validation,language_stopwords,fulltext,tfidf,linear_svc_c05_tol1e4,,Ciencias Económicas,21,200000,True
+validation,language_stopwords,fulltext,tfidf,linear_svc_c05_tol1e4,,Ciencias Exactas,26,200000,True
+validation,language_stopwords,fulltext,tfidf,linear_svc_c05_tol1e4,,Ciencias Informáticas,24,200000,True
+validation,language_stopwords,fulltext,tfidf,linear_svc_c05_tol1e4,,Ciencias Jurídicas,24,200000,True
+validation,language_stopwords,fulltext,tfidf,linear_svc_c05_tol1e4,,Ciencias Médicas,21,200000,True
+validation,language_stopwords,fulltext,tfidf,linear_svc_c05_tol1e4,,Ciencias Naturales,25,200000,True
+validation,language_stopwords,fulltext,tfidf,linear_svc_c05_tol1e4,,Ciencias Sociales,25,200000,True
+validation,language_stopwords,fulltext,tfidf,linear_svc_c05_tol1e4,,Ciencias Veterinarias,21,200000,True
+validation,language_stopwords,fulltext,tfidf,linear_svc_c05_tol1e4,,Ciencias de la Educación,26,200000,True
+validation,language_stopwords,fulltext,tfidf,linear_svc_c05_tol1e4,,Comunicación,23,200000,True
+validation,language_stopwords,fulltext,tfidf,linear_svc_c05_tol1e4,,Comunicación Social,22,200000,True
+validation,language_stopwords,fulltext,tfidf,linear_svc_c05_tol1e4,,Educación,25,200000,True
+validation,language_stopwords,fulltext,tfidf,linear_svc_c05_tol1e4,,Educación Física,23,200000,True
+validation,language_stopwords,fulltext,tfidf,linear_svc_c05_tol1e4,,Filosofía,23,200000,True
+validation,language_stopwords,fulltext,tfidf,linear_svc_c05_tol1e4,,Física,22,200000,True
+validation,language_stopwords,fulltext,tfidf,linear_svc_c05_tol1e4,,Geografía,22,200000,True
+validation,language_stopwords,fulltext,tfidf,linear_svc_c05_tol1e4,,Historia,25,200000,True
+validation,language_stopwords,fulltext,tfidf,linear_svc_c05_tol1e4,,Humanidades,27,200000,True
+validation,language_stopwords,fulltext,tfidf,linear_svc_c05_tol1e4,,Ingeniería,23,200000,True
+validation,language_stopwords,fulltext,tfidf,linear_svc_c05_tol1e4,,Letras,26,200000,True
+validation,language_stopwords,fulltext,tfidf,linear_svc_c05_tol1e4,,Odontología,22,200000,True
+validation,language_stopwords,fulltext,tfidf,linear_svc_c05_tol1e4,,Periodismo,23,200000,True
+validation,language_stopwords,fulltext,tfidf,linear_svc_c05_tol1e4,,Psicología,21,200000,True
+validation,language_stopwords,fulltext,tfidf,linear_svc_c05_tol1e4,,Química,22,200000,True
+validation,language_stopwords,fulltext,tfidf,linear_svc_c05_tol1e4,,Relaciones Internacionales,23,200000,True
+validation,language_stopwords,fulltext,tfidf,linear_svc_c05_tol1e4,,Sociología,23,200000,True
+validation,language_stopwords,fulltext,tfidf,linear_svc_c05_tol1e4,,Trabajo Social,21,200000,True
+validation,language_stopwords,fulltext,tfidf,linear_svc_c05_tol1e4,,Urbanismo,22,200000,True
+validation,language_stopwords,fulltext,tfidf,linear_svc_c05_tol1e4,,Zoología,23,200000,True
+validation,language_stopwords,fulltext,tfidf,linear_svc_c05_tol5e4,,Antropología,17,200000,True
+validation,language_stopwords,fulltext,tfidf,linear_svc_c05_tol5e4,,Arquitectura,22,200000,True
+validation,language_stopwords,fulltext,tfidf,linear_svc_c05_tol5e4,,Astronomía,19,200000,True
+validation,language_stopwords,fulltext,tfidf,linear_svc_c05_tol5e4,,Bellas Artes,20,200000,True
+validation,language_stopwords,fulltext,tfidf,linear_svc_c05_tol5e4,,Bibliotecología,22,200000,True
+validation,language_stopwords,fulltext,tfidf,linear_svc_c05_tol5e4,,Biología,18,200000,True
+validation,language_stopwords,fulltext,tfidf,linear_svc_c05_tol5e4,,Ciencias Agrarias,17,200000,True
+validation,language_stopwords,fulltext,tfidf,linear_svc_c05_tol5e4,,Ciencias Astronómicas,18,200000,True
+validation,language_stopwords,fulltext,tfidf,linear_svc_c05_tol5e4,,Ciencias Económicas,18,200000,True
+validation,language_stopwords,fulltext,tfidf,linear_svc_c05_tol5e4,,Ciencias Exactas,22,200000,True
+validation,language_stopwords,fulltext,tfidf,linear_svc_c05_tol5e4,,Ciencias Informáticas,20,200000,True
+validation,language_stopwords,fulltext,tfidf,linear_svc_c05_tol5e4,,Ciencias Jurídicas,20,200000,True
+validation,language_stopwords,fulltext,tfidf,linear_svc_c05_tol5e4,,Ciencias Médicas,17,200000,True
+validation,language_stopwords,fulltext,tfidf,linear_svc_c05_tol5e4,,Ciencias Naturales,22,200000,True
+validation,language_stopwords,fulltext,tfidf,linear_svc_c05_tol5e4,,Ciencias Sociales,21,200000,True
+validation,language_stopwords,fulltext,tfidf,linear_svc_c05_tol5e4,,Ciencias Veterinarias,18,200000,True
+validation,language_stopwords,fulltext,tfidf,linear_svc_c05_tol5e4,,Ciencias de la Educación,21,200000,True
+validation,language_stopwords,fulltext,tfidf,linear_svc_c05_tol5e4,,Comunicación,20,200000,True
+validation,language_stopwords,fulltext,tfidf,linear_svc_c05_tol5e4,,Comunicación Social,19,200000,True
+validation,language_stopwords,fulltext,tfidf,linear_svc_c05_tol5e4,,Educación,22,200000,True
+validation,language_stopwords,fulltext,tfidf,linear_svc_c05_tol5e4,,Educación Física,19,200000,True
+validation,language_stopwords,fulltext,tfidf,linear_svc_c05_tol5e4,,Filosofía,20,200000,True
+validation,language_stopwords,fulltext,tfidf,linear_svc_c05_tol5e4,,Física,19,200000,True
+validation,language_stopwords,fulltext,tfidf,linear_svc_c05_tol5e4,,Geografía,18,200000,True
+validation,language_stopwords,fulltext,tfidf,linear_svc_c05_tol5e4,,Historia,21,200000,True
+validation,language_stopwords,fulltext,tfidf,linear_svc_c05_tol5e4,,Humanidades,22,200000,True
+validation,language_stopwords,fulltext,tfidf,linear_svc_c05_tol5e4,,Ingeniería,20,200000,True
+validation,language_stopwords,fulltext,tfidf,linear_svc_c05_tol5e4,,Letras,22,200000,True
+validation,language_stopwords,fulltext,tfidf,linear_svc_c05_tol5e4,,Odontología,19,200000,True
+validation,language_stopwords,fulltext,tfidf,linear_svc_c05_tol5e4,,Periodismo,20,200000,True
+validation,language_stopwords,fulltext,tfidf,linear_svc_c05_tol5e4,,Psicología,18,200000,True
+validation,language_stopwords,fulltext,tfidf,linear_svc_c05_tol5e4,,Química,18,200000,True
+validation,language_stopwords,fulltext,tfidf,linear_svc_c05_tol5e4,,Relaciones Internacionales,19,200000,True
+validation,language_stopwords,fulltext,tfidf,linear_svc_c05_tol5e4,,Sociología,20,200000,True
+validation,language_stopwords,fulltext,tfidf,linear_svc_c05_tol5e4,,Trabajo Social,18,200000,True
+validation,language_stopwords,fulltext,tfidf,linear_svc_c05_tol5e4,,Urbanismo,19,200000,True
+validation,language_stopwords,fulltext,tfidf,linear_svc_c05_tol5e4,,Zoología,19,200000,True
+isolated_test_refit,language_stopwords,fulltext,bm25,linear_svc_c05_tol5e4,,Antropología,46,200000,True
+isolated_test_refit,language_stopwords,fulltext,bm25,linear_svc_c05_tol5e4,,Arquitectura,25,200000,True
+isolated_test_refit,language_stopwords,fulltext,bm25,linear_svc_c05_tol5e4,,Astronomía,89,200000,True
+isolated_test_refit,language_stopwords,fulltext,bm25,linear_svc_c05_tol5e4,,Bellas Artes,402,200000,True
+isolated_test_refit,language_stopwords,fulltext,bm25,linear_svc_c05_tol5e4,,Bibliotecología,174,200000,True
+isolated_test_refit,language_stopwords,fulltext,bm25,linear_svc_c05_tol5e4,,Biología,88,200000,True
+isolated_test_refit,language_stopwords,fulltext,bm25,linear_svc_c05_tol5e4,,Ciencias Agrarias,176,200000,True
+isolated_test_refit,language_stopwords,fulltext,bm25,linear_svc_c05_tol5e4,,Ciencias Astronómicas,24,200000,True
+isolated_test_refit,language_stopwords,fulltext,bm25,linear_svc_c05_tol5e4,,Ciencias Económicas,342,200000,True
+isolated_test_refit,language_stopwords,fulltext,bm25,linear_svc_c05_tol5e4,,Ciencias Exactas,56,200000,True
+isolated_test_refit,language_stopwords,fulltext,bm25,linear_svc_c05_tol5e4,,Ciencias Informáticas,80,200000,True
+isolated_test_refit,language_stopwords,fulltext,bm25,linear_svc_c05_tol5e4,,Ciencias Jurídicas,22,200000,True
+isolated_test_refit,language_stopwords,fulltext,bm25,linear_svc_c05_tol5e4,,Ciencias Médicas,62,200000,True
+isolated_test_refit,language_stopwords,fulltext,bm25,linear_svc_c05_tol5e4,,Ciencias Naturales,23,200000,True
+isolated_test_refit,language_stopwords,fulltext,bm25,linear_svc_c05_tol5e4,,Ciencias Sociales,47987,200000,True
+isolated_test_refit,language_stopwords,fulltext,bm25,linear_svc_c05_tol5e4,,Ciencias Veterinarias,45,200000,True
+isolated_test_refit,language_stopwords,fulltext,bm25,linear_svc_c05_tol5e4,,Ciencias de la Educación,78,200000,True
+isolated_test_refit,language_stopwords,fulltext,bm25,linear_svc_c05_tol5e4,,Comunicación,44,200000,True
+isolated_test_refit,language_stopwords,fulltext,bm25,linear_svc_c05_tol5e4,,Comunicación Social,29,200000,True
+isolated_test_refit,language_stopwords,fulltext,bm25,linear_svc_c05_tol5e4,,Educación,47974,200000,True
+isolated_test_refit,language_stopwords,fulltext,bm25,linear_svc_c05_tol5e4,,Educación Física,113,200000,True
+isolated_test_refit,language_stopwords,fulltext,bm25,linear_svc_c05_tol5e4,,Filosofía,406,200000,True
+isolated_test_refit,language_stopwords,fulltext,bm25,linear_svc_c05_tol5e4,,Física,185,200000,True
+isolated_test_refit,language_stopwords,fulltext,bm25,linear_svc_c05_tol5e4,,Geografía,50,200000,True
+isolated_test_refit,language_stopwords,fulltext,bm25,linear_svc_c05_tol5e4,,Historia,690,200000,True
+isolated_test_refit,language_stopwords,fulltext,bm25,linear_svc_c05_tol5e4,,Humanidades,162852,200000,True
+isolated_test_refit,language_stopwords,fulltext,bm25,linear_svc_c05_tol5e4,,Ingeniería,60,200000,True
+isolated_test_refit,language_stopwords,fulltext,bm25,linear_svc_c05_tol5e4,,Letras,41,200000,True
+isolated_test_refit,language_stopwords,fulltext,bm25,linear_svc_c05_tol5e4,,Odontología,23,200000,True
+isolated_test_refit,language_stopwords,fulltext,bm25,linear_svc_c05_tol5e4,,Periodismo,26,200000,True
+isolated_test_refit,language_stopwords,fulltext,bm25,linear_svc_c05_tol5e4,,Psicología,38,200000,True
+isolated_test_refit,language_stopwords,fulltext,bm25,linear_svc_c05_tol5e4,,Química,37,200000,True
+isolated_test_refit,language_stopwords,fulltext,bm25,linear_svc_c05_tol5e4,,Relaciones Internacionales,36,200000,True
+isolated_test_refit,language_stopwords,fulltext,bm25,linear_svc_c05_tol5e4,,Sociología,387,200000,True
+isolated_test_refit,language_stopwords,fulltext,bm25,linear_svc_c05_tol5e4,,Trabajo Social,20,200000,True
+isolated_test_refit,language_stopwords,fulltext,bm25,linear_svc_c05_tol5e4,,Urbanismo,20,200000,True
+isolated_test_refit,language_stopwords,fulltext,bm25,linear_svc_c05_tol5e4,,Zoología,23,200000,True

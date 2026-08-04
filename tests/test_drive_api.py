@@ -9,8 +9,8 @@ from ir_subject_classification.drive_api import normalize_my_drive_path
     ("path", "expected"),
     [
         (
-            "/content/drive/MyDrive/A___Maestria_en_ID/Datos_SEDICI/SEDICI_FullText_TXT",
-            ["A___Maestria_en_ID", "Datos_SEDICI", "SEDICI_FullText_TXT"],
+            "/content/drive/MyDrive/research_project/data/fulltext_txt",
+            ["research_project", "data", "fulltext_txt"],
         ),
         (
             r"\content\drive\My Drive\course\data",

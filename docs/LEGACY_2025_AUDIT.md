@@ -342,16 +342,17 @@ Para E0 debe extraerse y congelarse primero la variante de celdas 4–17, sin me
 
 ## 20. Paths hardcodeados
 
-Todas las notebooks dependen de rutas personales bajo:
+Todas las notebooks dependían de una ruta personal bajo el montaje de Drive,
+representada aquí de forma anonimizada como:
 
-`/content/drive/My Drive/A___Maestria_en_ID/Tareas_PLN/100_datos_thesis_maestria`
+`/content/drive/My Drive/<project-data-root>`
 
 También alternan `My Drive` y `MyDrive`. Nombres hardcodeados:
 
 - `Datos_SEDICI/var`
 - `Datos_SEDICI/SEDICI_FullText_TXT`
-- `Mapeo_SEDICI_Rafa_data-1758643353469.csv`
-- `SEDICIpoblacion.csv`
+- `<fulltext-mapping>.csv`
+- `<metadata-export>.csv`
 - `outputs_fulltext_clf`
 - `Datos_SEDICI/exports_jsonl_parquet`
 
