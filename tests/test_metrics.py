@@ -1,4 +1,5 @@
 import numpy as np
+import warnings
 
 from ir_subject_classification.metrics import (
     multilabel_metrics,
@@ -27,4 +28,13 @@ def test_paired_bootstrap_reports_candidate_minus_reference():
     )
     assert {row["metric"] for row in rows} == {"f1_macro", "f1_micro"}
     assert all(row["difference_candidate_minus_global"] > 0 for row in rows)
+
+
+def test_average_precision_ignores_labels_absent_from_a_subgroup():
+    truth = np.asarray([[1, 0], [0, 0]])
+    scores = np.asarray([[0.9, 0.2], [0.1, 0.3]])
+    with warnings.catch_warnings(record=True) as caught:
+        result = multilabel_metrics(truth, truth, scores)
+    assert not caught
+    assert result["average_precision_macro"] == 1.0
 
