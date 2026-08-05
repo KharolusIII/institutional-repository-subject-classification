@@ -2,9 +2,11 @@
 
 ## Methodological contract
 
-Train fits representations and classifiers. Validation selects preprocessing,
-representation, classifier, hyperparameters, pooling, and thresholds. Test
-remains isolated until the final configuration is frozen.
+Train fits representations and model parameters. Calibration estimates
+decision thresholds independently for each candidate. Validation selects
+preprocessing, representation, classifier, hyperparameters, pooling and the
+supervised-training epoch. Test remains isolated until all selection decisions
+are frozen.
 
 ## Historical versus 2026
 
@@ -25,7 +27,7 @@ remains isolated until the final configuration is frozen.
 | Estimators | Instances reused | Factory plus `sklearn.clone` | Isolation |
 | Randomness | Partial | Central seed | Repeatability |
 | Metrics | Accuracy, micro-F1, macro-F1 | Named subset accuracy, multilabel and ranking metrics | Cataloger-oriented evaluation |
-| Thresholds | Estimator defaults | Default/global/per-label on validation | Actionable suggestions |
+| Thresholds | Estimator defaults | Global/per-label on dedicated calibration | Actionable suggestions without validation leakage |
 | Test | Split created, not evaluated | Frozen final evaluation | Unbiased estimate |
 | Timing | Classifier fit + predict called `time_sec` | Stage-separated timing | Honest resource accounting |
 | Artifacts | CSVs on Drive | Manifests, statistics, metrics, predictions | Reproducibility/integration |
@@ -47,16 +49,27 @@ fulltext → detect language → normalize → field-language stopwords
 If language is `und`, stopwords are not removed. Character n-grams must not
 receive stopword removal.
 
-## Transformer flow
+## Dense and supervised Transformer flows
 
 Transformer text receives NFKC, whitespace normalization, and removal of
 unambiguous technical corruption only. It does not receive stopword removal,
 stemming, or mandatory lemmatization.
 
-`legacy_truncated` reproduces direct `SentenceTransformer.encode`. Chunked
+The fixed embedding route loads the complete DistilUSE and LaBSE
+Sentence-Transformers pipelines without parameter updates. `legacy_truncated`
+reproduces direct `SentenceTransformer.encode`. Chunked
 modes query `model.max_seq_length`, tokenize, create configurable overlaps,
 embed chunks, and apply mean, length-weighted mean, or optional max pooling.
 Pooling is selected on validation, never test.
+
+The supervised route is architecturally distinct. It initializes
+`AutoModelForSequenceClassification` from the Transformer module distributed
+with each checkpoint, creates a new 37-output head, and jointly optimizes the
+backbone and head using class-weighted `BCEWithLogitsLoss`. It uses up to eight
+uniformly distributed, non-overlapping chunks per text unit and aggregates
+chunk logits to document scores. No contrastive sentence-embedding objective
+is used. Historical `sbert*` identifiers denote DistilUSE; see
+[`MODEL_NOMENCLATURE.md`](MODEL_NOMENCLATURE.md).
 
 ## Current execution boundary
 

@@ -39,6 +39,15 @@ def config(row):
     return " / ".join(row.get(key, "") for key in keys if row.get(key))
 
 
+def model_display_name(value):
+    return {
+        "sbert_frozen": "Fixed DistilUSE embeddings",
+        "labse_frozen": "Fixed LaBSE embeddings",
+        "sbert_finetuned": "DistilUSE-backbone sequence classifier",
+        "labse_finetuned": "LaBSE-backbone sequence classifier",
+    }.get(str(value), str(value))
+
+
 def build(output: Path):
     styles = getSampleStyleSheet()
     styles.add(ParagraphStyle(name="Centered", parent=styles["Normal"], alignment=TA_CENTER))
@@ -102,6 +111,14 @@ def build(output: Path):
     figure("dataset_construction_workflow.png", "Figure S1. Dataset construction and frozen partitions.")
     story.append(PageBreak())
     figure("experimental_protocol_workflow.png", "Figure S2. Experimental and selection protocol.")
+    story.append(Paragraph(
+        "Terminology: historical sbert* identifiers denote DistilUSE. Fixed candidates use the "
+        "complete, unchanged DistilUSE or LaBSE Sentence-Transformers pipeline. Supervised "
+        "candidates initialize AutoModelForSequenceClassification from the checkpoint's "
+        "Transformer module and jointly optimize it with a new 37-output head using "
+        "class-weighted BCE. This is sequence-classification fine-tuning, not contrastive "
+        "sentence-embedding fine-tuning.", styles["Normal"]
+    ))
 
     heading("S2. Complete experiment overview")
     grid = rows(V3 / "results_validation_grid.csv")
@@ -120,7 +137,7 @@ def build(output: Path):
     heading("S3. Family-level held-out comparison")
     family = rows(TABLES / "family_test_comparison.csv")
     table(["Family", "Selected feature set", "Validation Macro-F1", "Test Macro-F1", "Test Micro-F1"], [
-        [row["evaluation_family"], row["feature_set"], f'{float(row["validation_f1_macro"]):.4f}',
+        [model_display_name(row["evaluation_family"]), row["feature_set"], f'{float(row["validation_f1_macro"]):.4f}',
          metric(row, "f1_macro"), metric(row, "f1_micro")] for row in family
     ], [38 * mm, 75 * mm, 38 * mm, 34 * mm, 34 * mm])
 
@@ -144,17 +161,17 @@ def build(output: Path):
     figure("test_metrics_overview.png", "Figure S3. Final test metrics.", 205 * mm)
 
     story.append(PageBreak())
-    heading("S6. Fine-tuned transformer validation")
+    heading("S6. Supervised sequence-classifier validation")
     transformer = rows(TABLES / "transformer_validation.csv")
     table(["Model", "Feature set", "Selected epoch", "Macro-F1", "Micro-F1"], [
-        [row["model"], row["feature_set"], row["selected_epoch"], metric(row, "f1_macro"), metric(row, "f1_micro")]
+        [model_display_name(row["model"]), row["feature_set"], row["selected_epoch"], metric(row, "f1_macro"), metric(row, "f1_micro")]
         for row in transformer
     ], [45 * mm, 95 * mm, 32 * mm, 32 * mm, 32 * mm])
 
     heading("S7. Paired bootstrap comparisons")
     paired = rows(TABLES / "paired_bootstrap_updated.csv")
     table(["Candidate", "Metric", "Candidate − final BM25", "95% CI", "P(candidate > BM25)"], [
-        [row["evaluation_family"], row["metric"], f'{float(row["difference_candidate_minus_final_bm25"]):.4f}',
+        [model_display_name(row["evaluation_family"]), row["metric"], f'{float(row["difference_candidate_minus_final_bm25"]):.4f}',
          f'[{float(row["ci_lower"]):.4f}, {float(row["ci_upper"]):.4f}]',
          f'{float(row["probability_candidate_better"]):.4f}'] for row in paired
     ], [45 * mm, 32 * mm, 46 * mm, 62 * mm, 48 * mm])

@@ -72,6 +72,15 @@ def configuration_name(row):
     )
 
 
+def model_display_name(value):
+    return {
+        "sbert_frozen": "Fixed DistilUSE embeddings",
+        "labse_frozen": "Fixed LaBSE embeddings",
+        "sbert_finetuned": "DistilUSE-backbone sequence classifier",
+        "labse_finetuned": "LaBSE-backbone sequence classifier",
+    }.get(str(value), str(value))
+
+
 def build(output: Path):
     document = Document()
     section = document.sections[0]
@@ -141,12 +150,21 @@ def build(output: Path):
 
     document.add_heading("S4. Experimental protocol", level=1)
     document.add_paragraph(
-        "The primary validation set contains 233 candidates: 189 sparse configurations, 42 frozen "
-        "dense configurations, and two fine-tuned transformers. Macro-F1 is the prespecified primary "
+        "The primary validation set contains 233 candidates: 189 sparse configurations, 42 fixed "
+        "sentence-embedding configurations, and two supervised Transformer sequence classifiers. "
+        "Macro-F1 is the prespecified primary "
         "selection criterion; thresholds are estimated on the dedicated calibration partition."
     )
     add_picture(document, ROOT / "figures" / "experimental_protocol_workflow.png",
                 "Figure S2. Calibrated multilingual long-document evaluation protocol.")
+    document.add_paragraph(
+        "Dense-model terminology: historical sbert* identifiers denote DistilUSE. Fixed DistilUSE "
+        "and LaBSE candidates use their complete, unchanged Sentence-Transformers pipelines. The "
+        "supervised candidates instead initialize AutoModelForSequenceClassification from the "
+        "Transformer module distributed with each checkpoint, create a new 37-output head, and "
+        "jointly optimize backbone and head with class-weighted BCE. This is supervised "
+        "sequence-classification fine-tuning, not contrastive sentence-embedding fine-tuning."
+    )
 
     document.add_heading("S5. Validation and family-level test comparison", level=1)
     leaders = read_rows(TABLES / "validation_leaders.csv")
@@ -172,7 +190,7 @@ def build(output: Path):
 
     family = read_rows(TABLES / "family_test_comparison.csv")
     add_table(document, ["Family", "Selected source", "Val. Macro-F1", "Test Macro-F1", "Test Micro-F1"], [
-        [row["evaluation_family"], row["feature_set"],
+        [model_display_name(row["evaluation_family"]), row["feature_set"],
          f'{float(row["validation_f1_macro"]):.4f}', f'{float(row["f1_macro"]):.4f}',
          f'{float(row["f1_micro"]):.4f}'] for row in family
     ], [1.25, 1.65, 1.2, 1.2, 1.2])
@@ -205,17 +223,17 @@ def build(output: Path):
 
     paired = read_rows(TABLES / "paired_bootstrap_updated.csv")
     add_table(document, ["Comparison", "Metric", "Difference", "95% CI", "P(candidate > BM25)"], [
-        [f'{row["evaluation_family"]} minus final BM25', row["metric"],
+        [f'{model_display_name(row["evaluation_family"])} minus final BM25', row["metric"],
          f'{float(row["difference_candidate_minus_final_bm25"]):.4f}',
          f'[{float(row["ci_lower"]):.4f}, {float(row["ci_upper"]):.4f}]',
          f'{float(row["probability_candidate_better"]):.4f}']
         for row in paired
     ], [2.3, 0.9, 1.1, 1.6, 0.7])
 
-    document.add_heading("S7. Fine-tuning trajectories", level=1)
+    document.add_heading("S7. Supervised sequence-classification trajectories", level=1)
     transformer = read_rows(TABLES / "transformer_validation.csv")
     add_table(document, ["Model", "Selected epoch", "Val. Macro-F1", "Val. Micro-F1"], [
-        [row["model"], row["selected_epoch"], metric(row, "f1_macro"), metric(row, "f1_micro")]
+        [model_display_name(row["model"]), row["selected_epoch"], metric(row, "f1_macro"), metric(row, "f1_micro")]
         for row in transformer
     ], [2.2, 1.3, 1.4, 1.4])
 

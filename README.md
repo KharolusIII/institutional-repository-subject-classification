@@ -115,7 +115,7 @@ These are the maintained configurations for reproducing or extending the final
 | Profile | Configuration | Intended use |
 |---|---|---|
 | Synthetic smoke | `configs/dummy.yaml` | Fast public end-to-end check without external data |
-| Protocol smoke v3 | `configs/run_protocol_smoke_1k_v3_2026.yaml` | Segmentation, calibration and fine-tuning acceptance test on approximately 1,000 items |
+| Protocol smoke v3 | `configs/run_protocol_smoke_1k_v3_2026.yaml` | Segmentation, calibration and supervised sequence-classification acceptance test on approximately 1,000 items |
 | Paper experiment v3 | `configs/run_full_20k_v3_2026.yaml` | Frozen 20k paper cohort; 233 validation candidates and family-level tests |
 | Convergence audit | `configs/run_convergence_audit_20k_2026.yaml` | Eight controlled BM25/TF-IDF LinearSVC fits and confirmatory held-out test |
 | Full-corpus v3 | `configs/run_full_corpus_v3_2026.yaml` | Final segmented and calibrated protocol over every eligible item |
@@ -131,10 +131,10 @@ earlier ablations. Their results must not be mixed with the final v3 protocol.
 | Profile | Configuration | Intended use |
 |---|---|---|
 | `smoke` | `configs/run_smoke_2026.yaml` | Up to 1,000 items; input/schema and fast Colab checks |
-| `full-smoke` | `configs/run_full_smoke_1k_2026.yaml` | Up to 1,000 items; sparse plus SBERT and LaBSE timing |
+| `full-smoke` | `configs/run_full_smoke_1k_2026.yaml` | Up to 1,000 items; sparse plus fixed DistilUSE and LaBSE embedding timing |
 | `20k` | `configs/run_20k_2026.yaml` | Historical-scale comparison and E0/E1 continuity |
 | `full-20k` | `configs/run_full_20k_2026.yaml` | All 231 sparse and dense combinations on a stratified 20,000-item sample |
-| `full-20k-v2` | `configs/run_full_20k_v2_2026.yaml` | Calibrated 20k protocol plus resumable supervised SBERT/LaBSE fine-tuning |
+| `full-20k-v2` | `configs/run_full_20k_v2_2026.yaml` | Calibrated 20k protocol plus resumable DistilUSE- and LaBSE-backbone sequence classifiers |
 | `full-final` | `configs/run_full_final_2026.yaml` | All 231 sparse and dense combinations on every eligible item and 37 labels |
 | `full` | `configs/run_full_corpus_2026.yaml` | Every eligible item; resumable sparse plus dense execution |
 
@@ -168,8 +168,8 @@ setting `EXECUTION_STAGE` in the notebook:
 1. `prepare` downloads and consolidates the selected full text, detects
    languages, fixes the split, and writes compressed Parquet datasets;
 2. `sparse` evaluates BoW, TF-IDF, and BM25;
-3. `sbert` creates/reuses chunked SBERT vectors and evaluates all classifiers;
-4. `labse` does the same for LaBSE;
+3. `sbert` creates/reuses fixed, chunked DistilUSE vectors and evaluates all linear classifiers;
+4. `labse` does the same for fixed LaBSE sentence embeddings;
 5. `finalize` selects the validation winner and performs the isolated test
    evaluation.
 
@@ -181,8 +181,10 @@ batch-sharded NumPy caches keyed by model, pooling configuration, and document
 contents. A disconnection can therefore lose at most the currently encoded
 document batch rather than an entire representation.
 
-The `full-20k-v2` notebook also fine-tunes multilingual SBERT and LaBSE with
-binary cross-entropy over uniformly sampled chunks from each document. It
+The `full-20k-v2` profile also trains supervised sequence classifiers
+initialized from the Transformer modules distributed with the DistilUSE and
+LaBSE checkpoints. It uses binary cross-entropy over uniformly sampled chunks
+from each text unit. It
 checkpoints every 500 training batches and after every epoch. Model selection
 uses validation, per-label thresholds use a separate calibration split, and
 the global validation winner is frozen before any test result is computed.
@@ -193,17 +195,32 @@ functional test.
 
 The global validation winner remains the single confirmatory result. Protocol
 v3 also pre-specifies the best-validation selection rule for each representation family
-(BoW, TF-IDF, BM25, frozen SBERT/LaBSE, and fine-tuned SBERT/LaBSE) for a
+(BoW, TF-IDF, BM25, fixed DistilUSE/LaBSE embeddings, and DistilUSE-/LaBSE-
+backbone sequence classifiers) for a
 secondary test comparison. Those results cannot replace the global winner and
 include paired bootstrap differences on the same test documents.
 
 Protocol v3 preserves every abstract value and every mapped full-text file as
 an independent text unit. Sparse preprocessing detects language per abstract
-and per full-text window. Dense and fine-tuned models aggregate hierarchically
+and per full-text window. Fixed dense embeddings and supervised sequence
+classifiers aggregate hierarchically
 from chunks to text units and then to handles, with field weights normalized so
 that an item with more files does not receive more total weight. Explicit
 absence markers such as `No posee` are removed and audited. See
 [`docs/PROTOCOL_V3_CHECKLIST.md`](docs/PROTOCOL_V3_CHECKLIST.md).
+
+### Dense-model terminology
+
+Historical identifiers such as `sbert`, `sbert_frozen` and
+`sbert_finetuned` are retained in configurations, caches and result tables for
+reproducibility. They refer specifically to DistilUSE
+(`distiluse-base-multilingual-cased-v1`). The fixed route uses the complete
+Sentence-Transformers embedding pipelines. The supervised route instead
+initializes `AutoModelForSequenceClassification` from the corresponding
+Transformer module, creates a 37-output head, and jointly updates backbone and
+head with class-weighted binary cross-entropy. It is therefore supervised
+sequence-classification fine-tuning, not contrastive sentence-embedding
+fine-tuning. See [`docs/MODEL_NOMENCLATURE.md`](docs/MODEL_NOMENCLATURE.md).
 
 The 20k profile is retained as an experimental control, not as a permanent
 limit. Results across scales must be reported separately because their
@@ -297,7 +314,7 @@ publication-ready figures. Original subject label names are never translated.
 ## Historical baseline and 2026 experiments
 
 `configs/baseline_2025.yaml` captures the audited E0 behavior: 37 labels,
-TF-IDF/BM25/SBERT/LaBSE, seven feature sets, and One-vs-Rest LogReg,
+TF-IDF/BM25/DistilUSE/LaBSE, seven feature sets, and One-vs-Rest LogReg,
 LinearSVC, and SGD. Historical values are reference evidence, not new results.
 
 The planned sequence is:

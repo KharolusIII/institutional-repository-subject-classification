@@ -46,9 +46,9 @@ The 233 primary validation candidates comprise:
 
 - 189 sparse candidates: 3 preprocessing modes × 7 field combinations ×
   3 representations × 3 classifiers;
-- 42 frozen dense candidates: 2 embedding models × 7 field combinations ×
+- 42 fixed dense candidates: 2 embedding models × 7 field combinations ×
   3 classifiers; and
-- 2 fine-tuned transformer candidates.
+- 2 supervised Transformer sequence classifiers.
 
 **Complete table:** [download or inspect all 233 validation configurations](runs/v3_main/results_validation_grid.csv).
 This machine-readable table includes preprocessing, feature set,
@@ -60,19 +60,31 @@ the v3 grid is BM25/full-text/LinearSVC (`0.748348`). The highest validation
 Micro-F1 is BM25/all-fields/logistic-regression (`0.777362`, Macro-F1
 `0.738822`). The former advanced because Macro-F1 was prespecified.
 
-## S5. Transformer adaptation
+## S5. Fixed embeddings and supervised Transformer classifiers
 
-Frozen SBERT and LaBSE encode overlapping token chunks and aggregate them by a
-length-weighted mean from chunks to text units and then to handles. Fine-tuning
-uses `AutoModelForSequenceClassification`, non-overlapping chunks sampled
-uniformly across each unit, at most eight chunks per unit, a length of 256,
-class-weighted binary cross-entropy, AdamW at `2e-5`, batch 16, evaluation batch
-64, gradient accumulation 4 and gradient checkpointing.
+Fixed DistilUSE and LaBSE use their complete Sentence-Transformers pipelines
+to encode overlapping token chunks and aggregate them by a length-weighted mean
+from chunks to text units and then to handles. Their parameters do not change.
+The supervised route is architecturally distinct: it initializes
+`AutoModelForSequenceClassification` from the Transformer module distributed
+with each checkpoint, creates a new 37-output head, and jointly optimizes
+backbone and head. It uses non-overlapping chunks sampled uniformly across each
+unit, at most eight chunks per text unit, a length of 256, class-weighted binary
+cross-entropy, AdamW at `2e-5`, batch 16, evaluation batch 64, gradient
+accumulation 4 and gradient checkpointing. No sentence-similarity or
+contrastive embedding objective is used.
 
-Both models selected epoch 5. SBERT validation Macro-F1 progresses from 0.5967
+Both supervised classifiers selected epoch 5. The DistilUSE-backbone classifier
+validation Macro-F1 progresses from 0.5967
 to 0.6663 monotonically. LaBSE progresses 0.6596, 0.6895, 0.7078, 0.7077 and
-0.7148. Fine-tuned LaBSE is the strongest transformer family on test
+0.7148. The LaBSE-backbone classifier is the strongest Transformer family on test
 (Macro-F1 0.7069; Micro-F1 0.7279).
+
+The fixed/supervised differences are descriptive family-level comparisons,
+not controlled causal estimates of fine-tuning, because architecture, chunk
+handling and the validation-selected field set can differ. Historical `sbert*`
+identifiers in the released CSVs denote DistilUSE and are retained to preserve
+checkpoint and result provenance.
 
 ## S6. Convergence and final evaluation
 
@@ -115,7 +127,7 @@ the per-label figures for the complete audit.
 | Corpus and split | `runs/v3_main/dataset_statistics.csv`, `text_unit_statistics.csv`, `fulltext_coverage.csv`, `label_coverage_by_split.csv` |
 | Language audit | `runs/v3_main/language_agreement_summary.csv`, `abstract_language_ground_truth_summary.csv`, language distributions |
 | Complete 233-candidate validation comparison | [`runs/v3_main/results_validation_grid.csv`](runs/v3_main/results_validation_grid.csv) |
-| Fine-tuning | `tables/transformer_validation.csv`, `sbert_epoch_history.csv`, `labse_epoch_history.csv` |
+| Supervised sequence classification | `tables/transformer_validation.csv`, `sbert_epoch_history.csv`, `labse_epoch_history.csv`, `model_nomenclature.csv` |
 | Family results | `tables/family_test_comparison.csv` |
 | Convergence audit | `runs/convergence_audit/results_validation.csv`, `tables/classifier_convergence.csv` |
 | Final metrics and CIs | `tables/final_test_metrics.csv`, `runs/convergence_audit/bootstrap_ci.csv` |

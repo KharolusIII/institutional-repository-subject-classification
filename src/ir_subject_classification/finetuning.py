@@ -1,4 +1,9 @@
-"""Supervised multi-label transformer fine-tuning over sampled document chunks."""
+"""End-to-end multi-label sequence classification over sampled text-unit chunks.
+
+This path initializes AutoModelForSequenceClassification from the Transformer
+module of the DistilUSE or LaBSE checkpoint. It does not fine-tune the complete
+Sentence-Transformers embedding pipeline with a similarity objective.
+"""
 
 from __future__ import annotations
 
@@ -117,7 +122,7 @@ def _encode_documents(
 
 
 def run_finetuning(dataset: pd.DataFrame, labels: list[str], config: dict, output_dir: str | Path) -> Path:
-    """Fine-tune configured encoders and test only the validation-selected winner."""
+    """Train configured sequence classifiers and preserve test isolation."""
     try:
         import torch
         from sklearn.preprocessing import MultiLabelBinarizer
@@ -169,6 +174,8 @@ def run_finetuning(dataset: pd.DataFrame, labels: list[str], config: dict, outpu
             "labse_finetuned": "sentence-transformers/LaBSE",
         },
     )
+    # ``sbert_finetuned`` is a compatibility identifier for the classifier
+    # initialized from the Transformer module of the DistilUSE checkpoint.
     validation_rows = []
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     if device.type == "cuda":
