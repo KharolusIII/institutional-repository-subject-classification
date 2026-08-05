@@ -1,4 +1,8 @@
-"""Long-document SentenceTransformer encoding and cache."""
+"""Fixed long-document SentenceTransformer embeddings and cache.
+
+The historical ``sbert`` identifier is the DistilUSE checkpoint. This module
+uses each complete Sentence-Transformers pipeline without parameter updates.
+"""
 
 from __future__ import annotations
 

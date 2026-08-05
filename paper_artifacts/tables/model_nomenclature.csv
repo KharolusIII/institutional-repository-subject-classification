@@ -1,0 +1,5 @@
+internal_identifier,scientific_display_name,execution_path
+sbert; sbert_frozen,fixed DistilUSE sentence embeddings,complete fixed Sentence-Transformers pipeline followed by a linear classifier
+labse; labse_frozen,fixed LaBSE sentence embeddings,complete fixed Sentence-Transformers pipeline followed by a linear classifier
+sbert_finetuned,DistilUSE-backbone sequence classifier,end-to-end supervised multi-label sequence-classification fine-tuning
+labse_finetuned,LaBSE-backbone sequence classifier,end-to-end supervised multi-label sequence-classification fine-tuning

@@ -33,6 +33,7 @@ def test_reviewer_package_has_complete_aggregate_evidence():
         ROOT / "CACIC_2026_Supplementary_Material.pdf",
         ROOT / "MANIFEST.sha256",
         TABLES / "final_test_metrics.csv",
+        TABLES / "model_nomenclature.csv",
         TABLES / "family_test_comparison.csv",
         TABLES / "validation_leaders.csv",
         TABLES / "paired_bootstrap_updated.csv",
@@ -51,6 +52,14 @@ def test_reviewer_package_has_complete_aggregate_evidence():
     ]
     missing = [str(path) for path in required if not path.is_file()]
     assert not missing
+
+
+def test_dense_model_nomenclature_is_explicit_and_traceable():
+    mapping = rows(TABLES / "model_nomenclature.csv")
+    by_identifier = {row["internal_identifier"]: row for row in mapping}
+    assert "DistilUSE" in by_identifier["sbert; sbert_frozen"]["scientific_display_name"]
+    assert "sequence classifier" in by_identifier["sbert_finetuned"]["scientific_display_name"]
+    assert "sequence classifier" in by_identifier["labse_finetuned"]["scientific_display_name"]
 
 
 def test_paper_counts_and_model_grid_match_frozen_artifacts():

@@ -50,7 +50,10 @@ All 37 one-vs-rest fits converged in the final validation and test refits.
 - `tables/language_agreement_summary.csv`: declared-versus-detected language
   agreement; this is not an accuracy estimate.
 - `tables/transformer_validation.csv` and `tables/*_epoch_history.csv`:
-  fine-tuning selection and learning curves.
+  supervised sequence-classifier selection and learning curves. Historical
+  `sbert*` identifiers denote DistilUSE.
+- `tables/model_nomenclature.csv`: mapping from immutable run identifiers to
+  scientifically precise model names.
 - `tables/paired_bootstrap_updated.csv`: exact item-level paired-bootstrap
   differences recomputed with 1,000 draws and seed 42.
 - `tables/classifier_convergence.csv`: per-label convergence audit.
@@ -85,3 +88,14 @@ but not Macro-F1 (`0.738822`), so it was not promoted to the final test.
 
 Results in this directory are evidence, not a miniature dataset. To exercise
 the software, run the synthetic Colab default or `configs/dummy.yaml`.
+
+## Dense-model nomenclature
+
+The fixed dense candidates use the complete, unchanged DistilUSE and LaBSE
+Sentence-Transformers pipelines. The supervised candidates are architecturally
+different: they initialize sequence-classification models from the Transformer
+modules distributed with those checkpoints and jointly optimize the backbone
+and a new 37-output head. Thus, comparisons between these routes are
+descriptive family-level comparisons, not controlled estimates of the isolated
+effect of sentence-embedding fine-tuning. See
+[`../docs/MODEL_NOMENCLATURE.md`](../docs/MODEL_NOMENCLATURE.md).
