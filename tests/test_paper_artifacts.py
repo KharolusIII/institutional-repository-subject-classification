@@ -2,6 +2,7 @@ import csv
 import hashlib
 import json
 from pathlib import Path
+from zipfile import ZipFile
 
 import pytest
 
@@ -10,6 +11,8 @@ ROOT = Path("paper_artifacts")
 TABLES = ROOT / "tables"
 V3 = ROOT / "runs" / "v3_main"
 AUDIT = ROOT / "runs" / "convergence_audit"
+EXPOSURE = ROOT / "reviewer_response" / "exposure_parity"
+EXPOSURE_ZIP = ROOT / "packages" / "exposure_parity_validation_artifacts_2026-09-15.zip"
 TEXT_SUFFIXES = {".csv", ".json", ".md", ".sha256", ".txt", ".yaml", ".yml"}
 
 
@@ -49,6 +52,17 @@ def test_reviewer_package_has_complete_aggregate_evidence():
         AUDIT / "thresholds.json",
         ROOT / "figures" / "dataset_construction_workflow.png",
         ROOT / "figures" / "experimental_protocol_workflow.png",
+        EXPOSURE / "README.md",
+        EXPOSURE / "REPORT.md",
+        EXPOSURE / "MANIFEST.sha256",
+        EXPOSURE / "tables" / "metrics_by_seed.csv",
+        EXPOSURE / "tables" / "metrics_aggregate.csv",
+        EXPOSURE / "tables" / "convergence_summary.csv",
+        EXPOSURE / "tables" / "exposure_totals.csv",
+        EXPOSURE / "tables" / "per_label_validation_aggregate.csv",
+        EXPOSURE / "tables" / "thresholds_by_seed.csv",
+        EXPOSURE_ZIP,
+        EXPOSURE_ZIP.with_suffix(".zip.sha256"),
     ]
     missing = [str(path) for path in required if not path.is_file()]
     assert not missing
@@ -139,3 +153,100 @@ def test_public_artifact_manifest_matches_every_file():
     assert set(expected) == set(actual_paths)
     for relative, path in actual_paths.items():
         assert hashlib.sha256(portable_bytes(path)).hexdigest() == expected[relative]
+
+
+def test_exposure_parity_metrics_and_scope_are_exact():
+    aggregate = rows(EXPOSURE / "tables" / "metrics_aggregate.csv")
+    keyed = {(row["split"], row["model"], row["metric"]): row for row in aggregate}
+    assert float(keyed[("validation", "bm25_matched", "f1_macro")]["mean"]) == pytest.approx(
+        0.7573298252205513
+    )
+    assert float(keyed[("validation", "bm25_matched", "f1_micro")]["mean"]) == pytest.approx(
+        0.7700862895493767
+    )
+    assert float(keyed[("validation", "labse_matched", "f1_macro")]["mean"]) == pytest.approx(
+        0.7397944287273
+    )
+    assert float(keyed[("validation", "labse_matched", "f1_macro")]["sample_sd"]) == pytest.approx(
+        0.0019794606107488726
+    )
+    assert float(keyed[("validation", "labse_matched", "f1_micro")]["mean"]) == pytest.approx(
+        0.7537219918974052
+    )
+
+    convergence = {int(row["seed"]): row for row in rows(EXPOSURE / "tables" / "convergence_summary.csv")}
+    assert {seed: int(row["selected_epoch"]) for seed, row in convergence.items()} == {13: 14, 42: 9, 73: 9}
+    assert int(convergence[73]["numerical_peak_epoch"]) == 10
+    assert float(convergence[73]["peak_minus_selected_f1_macro"]) < 0.002
+
+    totals = {row["split"]: row for row in rows(EXPOSURE / "tables" / "exposure_totals.csv")}
+    non_test = totals["all_non_test"]
+    assert non_test["n_documents"] == "16751"
+    assert non_test["capped_source_characters"] == "866897087"
+    assert non_test["selected_source_characters"] == "136758120"
+    assert float(non_test["matched_character_coverage_percentage"]) == pytest.approx(15.775588827189127)
+
+    assert len(rows(EXPOSURE / "tables" / "per_label_validation_by_seed.csv")) == 3 * 2 * 37
+    assert len(rows(EXPOSURE / "tables" / "per_label_validation_aggregate.csv")) == 2 * 37
+    assert len(rows(EXPOSURE / "tables" / "thresholds_by_seed.csv")) == 3 * 2 * 37
+    provenance = json.loads((EXPOSURE / "provenance.json").read_text(encoding="utf-8"))
+    assert provenance["followup_test_inference_performed"] is False
+    assert provenance["followup_test_evaluation_performed"] is False
+    assert provenance["historical_test_results_previously_inspected"] is True
+    assert "final_test_opened" not in provenance
+    report = (EXPOSURE / "REPORT.md").read_text(encoding="utf-8")
+    compact_report = " ".join(line.removeprefix("> ").strip() for line in report.splitlines())
+    assert "per original full-text unit" in compact_report
+    assert "No test inference or evaluation was performed" in compact_report
+    assert "validation-only" in compact_report
+    assert "no probability or score calibration is performed" in compact_report
+    assert "Historical execution source revision" in report
+    assert "Thresholds are calibrated" not in report
+    assert "calibration-only threshold fitting" not in report
+
+
+def test_exposure_parity_archive_is_complete_private_payload_free_and_checksummed():
+    package_manifest = {}
+    for line in (EXPOSURE / "MANIFEST.sha256").read_text(encoding="utf-8").splitlines():
+        digest, relative = line.split("  ", 1)
+        package_manifest[relative] = digest
+    package_files = {
+        path.relative_to(EXPOSURE).as_posix(): path
+        for path in EXPOSURE.rglob("*")
+        if path.is_file() and path.name != "MANIFEST.sha256"
+    }
+    assert set(package_manifest) == set(package_files)
+    assert all(hashlib.sha256(path.read_bytes()).hexdigest() == package_manifest[relative]
+               for relative, path in package_files.items())
+
+    for config in (EXPOSURE / "configs").glob("*.yaml"):
+        text = config.read_text(encoding="utf-8").casefold()
+        assert "run_final_test: false" in text
+        assert "${prepared_parquet}" in text
+        assert "/content/" not in text
+        assert "h:\\" not in text
+
+    prefix = EXPOSURE_ZIP.stem + "/"
+    with ZipFile(EXPOSURE_ZIP) as archive:
+        assert archive.testzip() is None
+        names = archive.namelist()
+        assert len(names) == len(set(names))
+        archived = {name.removeprefix(prefix) for name in names}
+        expected = {path.relative_to(EXPOSURE).as_posix() for path in EXPOSURE.rglob("*") if path.is_file()}
+        assert archived == expected
+        forbidden_suffixes = {".npy", ".pt", ".pth", ".ckpt", ".parquet", ".log"}
+        assert not any(Path(name).suffix.casefold() in forbidden_suffixes for name in names)
+        combined_text = "\n".join(
+            archive.read(name).decode("utf-8-sig")
+            for name in names
+            if Path(name).suffix.casefold() in {".csv", ".json", ".md", ".yaml", ".sha256"}
+        ).casefold()
+        assert "/content/drive/mydrive/" not in combined_text
+        assert "h:\\mi unidad" not in combined_text
+        assert "c:\\users\\" not in combined_text
+
+    expected_digest, expected_name = EXPOSURE_ZIP.with_suffix(".zip.sha256").read_text(
+        encoding="utf-8"
+    ).split()
+    assert expected_name == EXPOSURE_ZIP.name
+    assert hashlib.sha256(EXPOSURE_ZIP.read_bytes()).hexdigest() == expected_digest

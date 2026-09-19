@@ -1,0 +1,64 @@
+{
+  "environments_by_seed": {
+    "13": {
+      "cuda_runtime": "12.8",
+      "gpu": "NVIDIA RTX PRO 6000 Blackwell Server Edition",
+      "gpu_memory_bytes": 101974081536,
+      "packages": {
+        "huggingface-hub": "1.29.0",
+        "langid": "1.1.6",
+        "numpy": "2.1.3",
+        "pandas": "2.2.3",
+        "pyarrow": "23.0.1",
+        "scikit-learn": "1.6.1",
+        "scipy": "1.16.3",
+        "stopwordsiso": "0.7.1",
+        "tokenizers": "0.23.1",
+        "torch": "2.11.0+cu128",
+        "transformers": "5.16.1"
+      },
+      "platform": "Linux",
+      "python": "3.13.15"
+    },
+    "42": {
+      "cuda_runtime": "12.8",
+      "gpu": "NVIDIA RTX PRO 6000 Blackwell Server Edition",
+      "gpu_memory_bytes": 101974081536,
+      "packages": {
+        "huggingface-hub": "1.29.0",
+        "langid": "1.1.6",
+        "numpy": "2.1.3",
+        "pandas": "2.2.3",
+        "pyarrow": "23.0.1",
+        "scikit-learn": "1.6.1",
+        "scipy": "1.16.3",
+        "stopwordsiso": "0.7.1",
+        "tokenizers": "0.23.1",
+        "torch": "2.11.0+cu128",
+        "transformers": "5.16.1"
+      },
+      "platform": "Linux",
+      "python": "3.13.15"
+    },
+    "73": {
+      "cuda_runtime": "12.8",
+      "gpu": "NVIDIA RTX PRO 6000 Blackwell Server Edition",
+      "gpu_memory_bytes": 101974081536,
+      "packages": {
+        "huggingface-hub": "1.29.0",
+        "langid": "1.1.6",
+        "numpy": "2.1.3",
+        "pandas": "2.2.3",
+        "pyarrow": "23.0.1",
+        "scikit-learn": "1.6.1",
+        "scipy": "1.16.3",
+        "stopwordsiso": "0.7.1",
+        "tokenizers": "0.23.1",
+        "torch": "2.11.0+cu128",
+        "transformers": "5.16.1"
+      },
+      "platform": "Linux",
+      "python": "3.13.15"
+    }
+  }
+}

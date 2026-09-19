@@ -1,0 +1,223 @@
+seed,model,label_index,label,threshold,selected_on
+13,bm25_matched,0,Antropología,-0.48880491017918365,calibration
+13,bm25_matched,1,Arquitectura,-0.48880491017918365,calibration
+13,bm25_matched,2,Astronomía,0.15210608462109423,calibration
+13,bm25_matched,3,Bellas Artes,-0.48880491017918365,calibration
+13,bm25_matched,4,Bibliotecología,-0.48880491017918365,calibration
+13,bm25_matched,5,Biología,-0.7060619634091037,calibration
+13,bm25_matched,6,Ciencias Agrarias,-0.48880491017918365,calibration
+13,bm25_matched,7,Ciencias Astronómicas,-0.7060619634091037,calibration
+13,bm25_matched,8,Ciencias Económicas,0.0,calibration
+13,bm25_matched,9,Ciencias Exactas,-0.48880491017918365,calibration
+13,bm25_matched,10,Ciencias Informáticas,-0.48880491017918365,calibration
+13,bm25_matched,11,Ciencias Jurídicas,-0.48880491017918365,calibration
+13,bm25_matched,12,Ciencias Médicas,-0.48880491017918365,calibration
+13,bm25_matched,13,Ciencias Naturales,-0.48880491017918365,calibration
+13,bm25_matched,14,Ciencias Sociales,-0.48880491017918365,calibration
+13,bm25_matched,15,Ciencias Veterinarias,-0.48880491017918365,calibration
+13,bm25_matched,16,Ciencias de la Educación,-0.48880491017918365,calibration
+13,bm25_matched,17,Comunicación,-0.48880491017918365,calibration
+13,bm25_matched,18,Comunicación Social,-0.48880491017918365,calibration
+13,bm25_matched,19,Educación,-0.48880491017918365,calibration
+13,bm25_matched,20,Educación Física,-0.48880491017918365,calibration
+13,bm25_matched,21,Filosofía,0.0,calibration
+13,bm25_matched,22,Física,-0.48880491017918365,calibration
+13,bm25_matched,23,Geografía,-0.48880491017918365,calibration
+13,bm25_matched,24,Historia,-0.48880491017918365,calibration
+13,bm25_matched,25,Humanidades,0.0,calibration
+13,bm25_matched,26,Ingeniería,-0.48880491017918365,calibration
+13,bm25_matched,27,Letras,-0.48880491017918365,calibration
+13,bm25_matched,28,Odontología,-0.48880491017918365,calibration
+13,bm25_matched,29,Periodismo,-0.48880491017918365,calibration
+13,bm25_matched,30,Psicología,-0.48880491017918365,calibration
+13,bm25_matched,31,Química,-0.48880491017918365,calibration
+13,bm25_matched,32,Relaciones Internacionales,0.0,calibration
+13,bm25_matched,33,Sociología,-0.48880491017918365,calibration
+13,bm25_matched,34,Trabajo Social,-0.48880491017918365,calibration
+13,bm25_matched,35,Urbanismo,-0.48880491017918365,calibration
+13,bm25_matched,36,Zoología,-0.48880491017918365,calibration
+13,labse_matched,0,Antropología,-1.0,calibration
+13,labse_matched,1,Arquitectura,0.25,calibration
+13,labse_matched,2,Astronomía,3.25,calibration
+13,labse_matched,3,Bellas Artes,0.75,calibration
+13,labse_matched,4,Bibliotecología,1.0,calibration
+13,labse_matched,5,Biología,0.0,calibration
+13,labse_matched,6,Ciencias Agrarias,2.25,calibration
+13,labse_matched,7,Ciencias Astronómicas,0.75,calibration
+13,labse_matched,8,Ciencias Económicas,2.0,calibration
+13,labse_matched,9,Ciencias Exactas,1.75,calibration
+13,labse_matched,10,Ciencias Informáticas,1.75,calibration
+13,labse_matched,11,Ciencias Jurídicas,1.5,calibration
+13,labse_matched,12,Ciencias Médicas,1.0,calibration
+13,labse_matched,13,Ciencias Naturales,0.5,calibration
+13,labse_matched,14,Ciencias Sociales,0.0,calibration
+13,labse_matched,15,Ciencias Veterinarias,0.25,calibration
+13,labse_matched,16,Ciencias de la Educación,-0.25,calibration
+13,labse_matched,17,Comunicación,-0.75,calibration
+13,labse_matched,18,Comunicación Social,-0.5,calibration
+13,labse_matched,19,Educación,2.0,calibration
+13,labse_matched,20,Educación Física,-0.25,calibration
+13,labse_matched,21,Filosofía,-0.25,calibration
+13,labse_matched,22,Física,2.0,calibration
+13,labse_matched,23,Geografía,0.5,calibration
+13,labse_matched,24,Historia,1.25,calibration
+13,labse_matched,25,Humanidades,1.75,calibration
+13,labse_matched,26,Ingeniería,3.25,calibration
+13,labse_matched,27,Letras,0.25,calibration
+13,labse_matched,28,Odontología,0.5,calibration
+13,labse_matched,29,Periodismo,0.75,calibration
+13,labse_matched,30,Psicología,2.0,calibration
+13,labse_matched,31,Química,0.5,calibration
+13,labse_matched,32,Relaciones Internacionales,1.0,calibration
+13,labse_matched,33,Sociología,1.0,calibration
+13,labse_matched,34,Trabajo Social,0.0,calibration
+13,labse_matched,35,Urbanismo,-0.5,calibration
+13,labse_matched,36,Zoología,1.25,calibration
+42,bm25_matched,0,Antropología,-0.488804586942835,calibration
+42,bm25_matched,1,Arquitectura,-0.488804586942835,calibration
+42,bm25_matched,2,Astronomía,0.1521049792783907,calibration
+42,bm25_matched,3,Bellas Artes,-0.488804586942835,calibration
+42,bm25_matched,4,Bibliotecología,-0.488804586942835,calibration
+42,bm25_matched,5,Biología,-0.7060624361060213,calibration
+42,bm25_matched,6,Ciencias Agrarias,-0.488804586942835,calibration
+42,bm25_matched,7,Ciencias Astronómicas,-0.7060624361060213,calibration
+42,bm25_matched,8,Ciencias Económicas,0.0,calibration
+42,bm25_matched,9,Ciencias Exactas,-0.488804586942835,calibration
+42,bm25_matched,10,Ciencias Informáticas,-0.488804586942835,calibration
+42,bm25_matched,11,Ciencias Jurídicas,-0.488804586942835,calibration
+42,bm25_matched,12,Ciencias Médicas,-0.488804586942835,calibration
+42,bm25_matched,13,Ciencias Naturales,-0.488804586942835,calibration
+42,bm25_matched,14,Ciencias Sociales,-0.488804586942835,calibration
+42,bm25_matched,15,Ciencias Veterinarias,-0.488804586942835,calibration
+42,bm25_matched,16,Ciencias de la Educación,-0.488804586942835,calibration
+42,bm25_matched,17,Comunicación,-0.488804586942835,calibration
+42,bm25_matched,18,Comunicación Social,-0.488804586942835,calibration
+42,bm25_matched,19,Educación,-0.488804586942835,calibration
+42,bm25_matched,20,Educación Física,-0.488804586942835,calibration
+42,bm25_matched,21,Filosofía,0.0,calibration
+42,bm25_matched,22,Física,-0.488804586942835,calibration
+42,bm25_matched,23,Geografía,-0.488804586942835,calibration
+42,bm25_matched,24,Historia,-0.488804586942835,calibration
+42,bm25_matched,25,Humanidades,0.0,calibration
+42,bm25_matched,26,Ingeniería,-0.488804586942835,calibration
+42,bm25_matched,27,Letras,-0.488804586942835,calibration
+42,bm25_matched,28,Odontología,-0.488804586942835,calibration
+42,bm25_matched,29,Periodismo,-0.488804586942835,calibration
+42,bm25_matched,30,Psicología,-0.488804586942835,calibration
+42,bm25_matched,31,Química,-0.488804586942835,calibration
+42,bm25_matched,32,Relaciones Internacionales,0.0,calibration
+42,bm25_matched,33,Sociología,-0.488804586942835,calibration
+42,bm25_matched,34,Trabajo Social,-0.488804586942835,calibration
+42,bm25_matched,35,Urbanismo,-0.488804586942835,calibration
+42,bm25_matched,36,Zoología,-0.488804586942835,calibration
+42,labse_matched,0,Antropología,-0.25,calibration
+42,labse_matched,1,Arquitectura,0.0,calibration
+42,labse_matched,2,Astronomía,3.0,calibration
+42,labse_matched,3,Bellas Artes,-0.25,calibration
+42,labse_matched,4,Bibliotecología,1.75,calibration
+42,labse_matched,5,Biología,2.75,calibration
+42,labse_matched,6,Ciencias Agrarias,0.75,calibration
+42,labse_matched,7,Ciencias Astronómicas,1.5,calibration
+42,labse_matched,8,Ciencias Económicas,0.0,calibration
+42,labse_matched,9,Ciencias Exactas,1.0,calibration
+42,labse_matched,10,Ciencias Informáticas,1.5,calibration
+42,labse_matched,11,Ciencias Jurídicas,1.75,calibration
+42,labse_matched,12,Ciencias Médicas,3.75,calibration
+42,labse_matched,13,Ciencias Naturales,1.5,calibration
+42,labse_matched,14,Ciencias Sociales,1.25,calibration
+42,labse_matched,15,Ciencias Veterinarias,1.5,calibration
+42,labse_matched,16,Ciencias de la Educación,1.25,calibration
+42,labse_matched,17,Comunicación,0.25,calibration
+42,labse_matched,18,Comunicación Social,0.5,calibration
+42,labse_matched,19,Educación,1.0,calibration
+42,labse_matched,20,Educación Física,-1.25,calibration
+42,labse_matched,21,Filosofía,2.75,calibration
+42,labse_matched,22,Física,1.0,calibration
+42,labse_matched,23,Geografía,0.75,calibration
+42,labse_matched,24,Historia,2.0,calibration
+42,labse_matched,25,Humanidades,0.5,calibration
+42,labse_matched,26,Ingeniería,1.5,calibration
+42,labse_matched,27,Letras,0.5,calibration
+42,labse_matched,28,Odontología,0.0,calibration
+42,labse_matched,29,Periodismo,1.0,calibration
+42,labse_matched,30,Psicología,1.75,calibration
+42,labse_matched,31,Química,1.5,calibration
+42,labse_matched,32,Relaciones Internacionales,1.25,calibration
+42,labse_matched,33,Sociología,1.5,calibration
+42,labse_matched,34,Trabajo Social,-0.75,calibration
+42,labse_matched,35,Urbanismo,-1.0,calibration
+42,labse_matched,36,Zoología,2.0,calibration
+73,bm25_matched,0,Antropología,-0.48879942948416055,calibration
+73,bm25_matched,1,Arquitectura,-0.48879942948416055,calibration
+73,bm25_matched,2,Astronomía,0.15210878852527787,calibration
+73,bm25_matched,3,Bellas Artes,-0.48879942948416055,calibration
+73,bm25_matched,4,Bibliotecología,-0.48879942948416055,calibration
+73,bm25_matched,5,Biología,-0.7060604783528991,calibration
+73,bm25_matched,6,Ciencias Agrarias,-0.48879942948416055,calibration
+73,bm25_matched,7,Ciencias Astronómicas,-0.7060604783528991,calibration
+73,bm25_matched,8,Ciencias Económicas,0.0,calibration
+73,bm25_matched,9,Ciencias Exactas,-0.48879942948416055,calibration
+73,bm25_matched,10,Ciencias Informáticas,-0.48879942948416055,calibration
+73,bm25_matched,11,Ciencias Jurídicas,-0.48879942948416055,calibration
+73,bm25_matched,12,Ciencias Médicas,-0.48879942948416055,calibration
+73,bm25_matched,13,Ciencias Naturales,-0.48879942948416055,calibration
+73,bm25_matched,14,Ciencias Sociales,-0.48879942948416055,calibration
+73,bm25_matched,15,Ciencias Veterinarias,-0.48879942948416055,calibration
+73,bm25_matched,16,Ciencias de la Educación,-0.48879942948416055,calibration
+73,bm25_matched,17,Comunicación,-0.48879942948416055,calibration
+73,bm25_matched,18,Comunicación Social,-0.48879942948416055,calibration
+73,bm25_matched,19,Educación,-0.48879942948416055,calibration
+73,bm25_matched,20,Educación Física,-0.48879942948416055,calibration
+73,bm25_matched,21,Filosofía,0.0,calibration
+73,bm25_matched,22,Física,-0.48879942948416055,calibration
+73,bm25_matched,23,Geografía,-0.48879942948416055,calibration
+73,bm25_matched,24,Historia,-0.48879942948416055,calibration
+73,bm25_matched,25,Humanidades,0.0,calibration
+73,bm25_matched,26,Ingeniería,-0.48879942948416055,calibration
+73,bm25_matched,27,Letras,-0.48879942948416055,calibration
+73,bm25_matched,28,Odontología,-0.48879942948416055,calibration
+73,bm25_matched,29,Periodismo,-0.48879942948416055,calibration
+73,bm25_matched,30,Psicología,-0.48879942948416055,calibration
+73,bm25_matched,31,Química,-0.48879942948416055,calibration
+73,bm25_matched,32,Relaciones Internacionales,0.0,calibration
+73,bm25_matched,33,Sociología,-0.48879942948416055,calibration
+73,bm25_matched,34,Trabajo Social,-0.48879942948416055,calibration
+73,bm25_matched,35,Urbanismo,-0.48879942948416055,calibration
+73,bm25_matched,36,Zoología,-0.48879942948416055,calibration
+73,labse_matched,0,Antropología,1.0,calibration
+73,labse_matched,1,Arquitectura,3.0,calibration
+73,labse_matched,2,Astronomía,3.75,calibration
+73,labse_matched,3,Bellas Artes,1.0,calibration
+73,labse_matched,4,Bibliotecología,-1.25,calibration
+73,labse_matched,5,Biología,2.25,calibration
+73,labse_matched,6,Ciencias Agrarias,2.0,calibration
+73,labse_matched,7,Ciencias Astronómicas,1.25,calibration
+73,labse_matched,8,Ciencias Económicas,1.0,calibration
+73,labse_matched,9,Ciencias Exactas,1.75,calibration
+73,labse_matched,10,Ciencias Informáticas,1.25,calibration
+73,labse_matched,11,Ciencias Jurídicas,0.75,calibration
+73,labse_matched,12,Ciencias Médicas,2.5,calibration
+73,labse_matched,13,Ciencias Naturales,0.25,calibration
+73,labse_matched,14,Ciencias Sociales,-0.25,calibration
+73,labse_matched,15,Ciencias Veterinarias,2.25,calibration
+73,labse_matched,16,Ciencias de la Educación,1.25,calibration
+73,labse_matched,17,Comunicación,-0.75,calibration
+73,labse_matched,18,Comunicación Social,0.0,calibration
+73,labse_matched,19,Educación,1.0,calibration
+73,labse_matched,20,Educación Física,1.75,calibration
+73,labse_matched,21,Filosofía,1.75,calibration
+73,labse_matched,22,Física,0.75,calibration
+73,labse_matched,23,Geografía,1.75,calibration
+73,labse_matched,24,Historia,2.0,calibration
+73,labse_matched,25,Humanidades,1.5,calibration
+73,labse_matched,26,Ingeniería,1.5,calibration
+73,labse_matched,27,Letras,0.5,calibration
+73,labse_matched,28,Odontología,0.5,calibration
+73,labse_matched,29,Periodismo,0.25,calibration
+73,labse_matched,30,Psicología,0.25,calibration
+73,labse_matched,31,Química,1.75,calibration
+73,labse_matched,32,Relaciones Internacionales,1.0,calibration
+73,labse_matched,33,Sociología,2.0,calibration
+73,labse_matched,34,Trabajo Social,-0.25,calibration
+73,labse_matched,35,Urbanismo,1.5,calibration
+73,labse_matched,36,Zoología,2.0,calibration

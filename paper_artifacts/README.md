@@ -12,7 +12,8 @@ or model checkpoints are included.
 - Main-run commit: `7181fcceb7a62a155e589b53015a9de7a31dc083`
 - Audit implementation commit: `6e46e5c2af0249591d1f59b07b82ad43125bd0a2`
 - Cohort: 19,710 documents, 37 labels, 24,326 assignments
-- Frozen split: 12,836 train, 1,927 calibration, 1,988 validation, 2,959 test
+- Frozen split: 12,836 train, 1,927 threshold selection (internal split name:
+  `calibration`), 1,988 validation, 2,959 test
 
 Start with [`SUPPLEMENTARY_MATERIAL.md`](SUPPLEMENTARY_MATERIAL.md) for the
 reviewer-oriented narrative, [`RUNS_AND_PROVENANCE.md`](RUNS_AND_PROVENANCE.md)
@@ -21,8 +22,8 @@ underlying evidence.
 
 The complete experiment table is directly available as
 [`runs/v3_main/results_validation_grid.csv`](runs/v3_main/results_validation_grid.csv).
-It contains all 233 validation candidates and their configuration, calibrated
-thresholds, multilabel metrics and transformer training metadata.
+It contains all 233 validation candidates and their configuration, selected
+decision thresholds, multilabel metrics and transformer training metadata.
 
 `CACIC_2026_Supplementary_Material.docx` and
 `CACIC_2026_Supplementary_Material.pdf` are reviewer-ready renderings of the
@@ -31,6 +32,26 @@ and `scripts/build_supplementary_pdf.py`. The PDF includes the principal
 tables, all 37 per-subject results, and the main diagnostic figures; the full
 233-row grid remains available as a machine-readable CSV.
 `MANIFEST.sha256` provides a checksum for every file in this reviewer package.
+
+## Post-hoc exposure-parity response
+
+The reviewer's unequal-content-exposure concern is addressed by the
+validation-only control under
+[`reviewer_response/exposure_parity/`](reviewer_response/exposure_parity/).
+BM25 and end-to-end fine-tuned LaBSE receive evidence from the same exact raw
+source spans; three LaBSE training seeds and the matched BM25 control are
+reported without test inference or evaluation in this follow-up. The
+thresholded BM25 F1 values are identical across the three run contexts. The
+directory includes paste-ready response/manuscript text, complete aggregate
+metrics, convergence histories, exposure summaries, selected decision
+thresholds and all 37 per-label validation summaries.
+
+A self-contained download is available as
+[`packages/exposure_parity_validation_artifacts_2026-09-15.zip`](packages/exposure_parity_validation_artifacts_2026-09-15.zip),
+with its adjacent `.sha256` checksum. This is an aggregate evidence package,
+not a distribution of the restricted corpus, model weights or private training
+workspace. It contains no item identifiers, texts, predictions, caches, logs,
+credentials or private paths.
 
 The focused audit retained BM25 over language-aware stopword-filtered full text
 with Linear SVC (`C=0.5`, stored `tol=0.0005`). Tolerances `0.0001` and

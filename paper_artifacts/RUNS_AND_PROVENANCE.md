@@ -8,7 +8,7 @@
 | Source commit | `7181fcceb7a62a155e589b53015a9de7a31dc083` |
 | Configuration | `configs/run_full_20k_v3_2026.yaml` and inherited profiles |
 | Cohort | 19,710 documents; 37 labels; 24,326 assignments |
-| Split | 12,836 train; 1,927 calibration; 1,988 validation; 2,959 test |
+| Split | 12,836 train; 1,927 threshold selection (internal name: `calibration`); 1,988 validation; 2,959 test |
 | Search | 189 sparse + 42 fixed sentence-embedding + 2 supervised sequence-classifier candidates |
 | Primary criterion | Validation Macro-F1 |
 | Initial winner | language stopwords + full text + BM25 + LinearSVC |

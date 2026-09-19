@@ -1,0 +1,79 @@
+experiment:
+  family: exposure_matched
+  name: labse_fulltext_exposure_20epoch_final_audit
+  structural_version: long-document-v1
+  seed: 13
+  output_root: ${OUTPUT_ROOT}
+data:
+  synthetic: false
+  prepared_parquet: ${PREPARED_PARQUET}
+  split_manifest: ${SPLIT_MANIFEST}
+  split_context: ${SPLIT_CONTEXT}
+  labels_json: ${LABELS_JSON}
+  exposure_shard_size: 32
+model:
+  backend: huggingface
+  name: sentence-transformers/LaBSE
+  revision: 836121a0533e5664b21c7aacc5d22951f2b8b25b
+  tokenizer_name: sentence-transformers/LaBSE
+  tokenizer_revision: 836121a0533e5664b21c7aacc5d22951f2b8b25b
+  trust_remote_code: false
+long_document:
+  feature_set: fulltext
+  chunk_length: 256
+  chunk_overlap: 0
+  allocation: per_unit
+  max_chunks_per_text_unit: 8
+  max_chunks_per_document: 8
+  offset_fallback: error
+  tokenless_document_policy: special_tokens_only
+neural:
+  architecture: chunk_classifier
+  encoder_mode: end_to_end
+  pooling: mean
+  max_epochs: 20
+  batch_size: 2
+  eval_batch_size: 4
+  chunk_micro_batch_size: 8
+  gradient_accumulation_steps: 4
+  gradient_checkpointing: true
+  learning_rate: 2.0e-05
+  weight_decay: 0.01
+  max_grad_norm: 1.0
+  checkpoint_steps: 500
+  mixed_precision: auto
+  loss: bce_pos_weight
+  early_stopping:
+    enabled: true
+    patience: 2
+    minimum_delta: 0.002
+  thresholds:
+    minimum_label_support: 20
+sparse:
+  enabled: true
+  preprocessing: language_stopwords
+  vectorizer:
+    max_features: 100000
+    min_df: 2
+    max_df: 0.98
+    ngram_range:
+    - 1
+    - 2
+    lowercase: true
+    k1: 1.5
+    b: 0.75
+  classifier: linear_svc
+  classifier_parameters:
+    C: 0.5
+    tol: 0.0005
+    max_iter: 200000
+    dual: auto
+  thresholds:
+    mode: per_label_threshold
+    minimum_label_support: 20
+evaluation:
+  run_final_test: false
+neural_seeds:
+- 13
+- 42
+- 73

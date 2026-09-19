@@ -15,6 +15,8 @@ subjects to catalogers; it does not replace professional cataloging decisions.
 - [Final held-out metrics](paper_artifacts/tables/final_test_metrics.csv)
 - [Complete per-subject results](paper_artifacts/tables/per_label_test.csv)
 - [Runs and provenance](paper_artifacts/RUNS_AND_PROVENANCE.md)
+- [Exposure-parity reviewer response and validation evidence](paper_artifacts/reviewer_response/exposure_parity/REPORT.md)
+- [Downloadable exposure-parity artifact package](paper_artifacts/packages/exposure_parity_validation_artifacts_2026-09-15.zip)
 
 The public evidence package contains aggregate results only. Restricted texts,
 document identifiers, item-level predictions, private notebooks, credentials,
@@ -40,7 +42,8 @@ metadata + mapping + TXT/Parquet
   → label selection and iterative split
   → sparse preprocessing OR natural transformer text
   → representation + One-vs-Rest classifier
-  → validation selection and thresholds
+  → decision-threshold selection on the dedicated threshold-selection split
+  → configuration and checkpoint selection on validation
   → isolated final test
   → versioned reports and predictions
 ```
@@ -115,10 +118,10 @@ These are the maintained configurations for reproducing or extending the final
 | Profile | Configuration | Intended use |
 |---|---|---|
 | Synthetic smoke | `configs/dummy.yaml` | Fast public end-to-end check without external data |
-| Protocol smoke v3 | `configs/run_protocol_smoke_1k_v3_2026.yaml` | Segmentation, calibration and supervised sequence-classification acceptance test on approximately 1,000 items |
+| Protocol smoke v3 | `configs/run_protocol_smoke_1k_v3_2026.yaml` | Segmentation, decision-threshold selection and supervised sequence-classification acceptance test on approximately 1,000 items |
 | Paper experiment v3 | `configs/run_full_20k_v3_2026.yaml` | Frozen 20k paper cohort; 233 validation candidates and family-level tests |
 | Convergence audit | `configs/run_convergence_audit_20k_2026.yaml` | Eight controlled BM25/TF-IDF LinearSVC fits and confirmatory held-out test |
-| Full-corpus v3 | `configs/run_full_corpus_v3_2026.yaml` | Final segmented and calibrated protocol over every eligible item |
+| Full-corpus v3 | `configs/run_full_corpus_v3_2026.yaml` | Final segmented protocol with a dedicated threshold-selection partition over every eligible item |
 
 The paper results come from **Paper experiment v3**, followed by the
 **Convergence audit** using the same frozen cohort and split fingerprint.
@@ -186,8 +189,10 @@ initialized from the Transformer modules distributed with the DistilUSE and
 LaBSE checkpoints. It uses binary cross-entropy over uniformly sampled chunks
 from each text unit. It
 checkpoints every 500 training batches and after every epoch. Model selection
-uses validation, per-label thresholds use a separate calibration split, and
-the global validation winner is frozen before any test result is computed.
+uses validation, while per-label decision thresholds use a separate
+threshold-selection split (named `calibration` in the implementation); no
+probability or score calibration is performed. The global validation winner is
+frozen before any test result is computed.
 Protocol v3 trains for at most five epochs, evaluates after every epoch, stops
 after two epochs without a material Macro-F1 improvement, and restores the
 best-validation checkpoint. The 1k smoke intentionally remains a one-epoch
@@ -353,7 +358,7 @@ caches, and model weights are deliberately excluded.
 
 The [complete validation grid](paper_artifacts/runs/v3_main/results_validation_grid.csv)
 contains all 233 candidates with preprocessing, fields, representation,
-classifier, calibrated thresholds, multilabel metrics and transformer training
+classifier, selected decision thresholds, multilabel metrics and transformer training
 metadata. It is the machine-readable scientific export of the resumable
 validation checkpoint.
 

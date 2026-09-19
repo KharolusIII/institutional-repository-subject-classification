@@ -52,3 +52,60 @@ notebooks/private/
 # Historical local notebooks and manuscript copies
 Pipe 2025 OR/
 
+# Private experiment workspaces and personal overrides
+/runs/
+configs/local/
+configs/private/
+configs/research/local/
+*.local.yaml
+*.local.yml
+*.private.yaml
+*.private.yml
+*.local.ipynb
+*.private.ipynb
+.ipynb_checkpoints/
+
+# Model state and item-level runtime exports
+checkpoints/
+*.pt
+*.pth
+*.ckpt
+*.safetensors
+pytorch_model*.bin
+*.npy
+*.npz
+*.pkl
+*.pickle
+*.joblib
+predictions/
+predictions_*.csv
+predictions_*.json
+cohort_manifest.csv
+split_manifest.csv
+dataset_splits.csv
+exposure_spans*.csv
+*.log
+*.log.*
+
+# Cloud/OAuth credentials and local credential stores
+.secrets/
+secrets/
+secrets*.json
+secrets*.yaml
+secrets*.yml
+client_secret*.json
+client_secrets*.json
+service_account*.json
+service-account*.json
+application_default_credentials.json
+authorized_user*.json
+oauth*.json
+.netrc
+_netrc
+.pypirc
+.git-credentials
+id_rsa*
+id_ed25519*
+*.p12
+*.pfx
+

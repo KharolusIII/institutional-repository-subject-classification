@@ -52,7 +52,7 @@ The 233 primary validation candidates comprise:
 
 **Complete table:** [download or inspect all 233 validation configurations](runs/v3_main/results_validation_grid.csv).
 This machine-readable table includes preprocessing, feature set,
-representation, classifier, calibrated thresholds, multilabel metrics and
+representation, classifier, selected decision thresholds, multilabel metrics and
 transformer training metadata.
 
 Macro-F1 is the primary selection metric. The highest validation Macro-F1 in
