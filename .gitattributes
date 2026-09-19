@@ -1,2 +1,8 @@
-# Preserve the downloadable reviewer package byte-for-byte on every checkout.
+# Preserve published binary artifacts byte-for-byte on every checkout.
+*.pdf binary
+*.docx binary
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
 *.zip binary
