@@ -1,4 +1,4 @@
-"""Sparse representations, including the exact historical BM25 variant."""
+"""Sparse representations, including train-fitted BM25 weighting with positive IDF."""
 
 from __future__ import annotations
 
@@ -8,6 +8,24 @@ from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.feature_extraction.text import CountVectorizer, TfidfVectorizer
 
 
+# Provenance and attribution:
+# This sparse-matrix BM25 implementation evolved from earlier project notebooks
+# and was inspired in part by the computational structure of Sho Iizuka's
+# BM25Transformer:
+# https://github.com/arosh/BM25Transformer
+# Copyright (c) 2018 Sho IIZUKA -- BSD 3-Clause License.
+# See THIRD_PARTY_NOTICES.md.
+#
+# This implementation includes project-specific modifications: collection
+# statistics fitted on training data, k1=1.5 and b=0.75 defaults, configurable
+# CountVectorizer vocabulary and unigram/bigram features, and use as document
+# features for supervised classification.
+#
+# Its positive IDF,
+# log(1 + (N - df + 0.5) / (df + 0.5)),
+# is algebraically identical to the form documented by Apache Lucene's
+# BM25Similarity. No Lucene source code is incorporated, and Lucene is not
+# an executable dependency of this project.
 class BM25Transformer(BaseEstimator, TransformerMixin):
     def __init__(self, k1: float = 1.5, b: float = 0.75):
         self.k1 = k1

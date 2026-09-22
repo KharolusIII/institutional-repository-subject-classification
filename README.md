@@ -372,3 +372,14 @@ and copyright policies before processing or sharing exported content.
 
 Citation metadata are provided in [`CITATION.cff`](CITATION.cff). The software
 is released under the [MIT License](LICENSE).
+
+### Code provenance and third-party notices
+
+The project's sparse BM25 implementation evolved from earlier project
+notebooks and was inspired in part by the computational structure of Sho
+Iizuka's [`BM25Transformer`](https://github.com/arosh/BM25Transformer) (BSD 3-Clause).
+The current implementation contains project-specific modifications. Its
+positive IDF is algebraically identical to the form documented by Apache
+Lucene's `BM25Similarity`; no Lucene source code is incorporated, and Lucene
+is not an executable dependency. See
+[`THIRD_PARTY_NOTICES.md`](THIRD_PARTY_NOTICES.md).
